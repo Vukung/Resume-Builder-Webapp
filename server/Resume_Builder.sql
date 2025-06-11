@@ -1,7 +1,7 @@
--- CREATE DATABASE IF NOT EXISTS resume_builder;
+CREATE DATABASE IF NOT EXISTS resume_builder;
 USE resume_builder_database;
 
--- USER Table
+USER Table
 CREATE TABLE USER (
     user_id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
@@ -12,22 +12,22 @@ CREATE TABLE USER (
     profile_pic TEXT
 );
 
--- -- ROLE Table
--- CREATE TABLE ROLE (
---     role_id INT AUTO_INCREMENT PRIMARY KEY,
---     role_name VARCHAR(50) NOT NULL
--- );
+ROLE Table
+CREATE TABLE ROLE (
+    role_id INT AUTO_INCREMENT PRIMARY KEY,
+    role_name VARCHAR(50) NOT NULL
+);
 
--- -- USER_ROLE (Many-to-One Mapping)
--- CREATE TABLE USER_ROLE (
---     id INT AUTO_INCREMENT PRIMARY KEY,
---     user_id INT NOT NULL,
---     role_id INT NOT NULL,
---     FOREIGN KEY (user_id) REFERENCES USER(user_id) ON DELETE CASCADE,
---     FOREIGN KEY (role_id) REFERENCES ROLE(role_id) ON DELETE CASCADE
--- );
+USER_ROLE (Many-to-One Mapping)
+CREATE TABLE USER_ROLE (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    role_id INT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES USER(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (role_id) REFERENCES ROLE(role_id) ON DELETE CASCADE
+);
 
--- RESUME Table
+--- - RESUME Table
 CREATE TABLE RESUME (
     resume_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -36,7 +36,7 @@ CREATE TABLE RESUME (
     FOREIGN KEY (user_id) REFERENCES USER(user_id) ON DELETE CASCADE
 );
 
--- ABOUT_INFO Table
+-- -- ABOUT_INFO Table
 CREATE TABLE ABOUT_INFO (
     about_id INT AUTO_INCREMENT PRIMARY KEY,
     resume_id INT NOT NULL,
@@ -45,7 +45,7 @@ CREATE TABLE ABOUT_INFO (
     FOREIGN KEY (resume_id) REFERENCES RESUME(resume_id) ON DELETE CASCADE
 );
 
--- EDUCATION Table
+-- -- EDUCATION Table
 CREATE TABLE EDUCATION (
     education_id INT AUTO_INCREMENT PRIMARY KEY,
     resume_id INT NOT NULL,
@@ -57,7 +57,7 @@ CREATE TABLE EDUCATION (
     FOREIGN KEY (resume_id) REFERENCES RESUME(resume_id) ON DELETE CASCADE
 );
 
--- EXPERIENCE Table
+-- -- EXPERIENCE Table
 CREATE TABLE EXPERIENCE (
     experience_id INT AUTO_INCREMENT PRIMARY KEY,
     resume_id INT NOT NULL,
@@ -69,7 +69,7 @@ CREATE TABLE EXPERIENCE (
     FOREIGN KEY (resume_id) REFERENCES RESUME(resume_id) ON DELETE CASCADE
 );
 
--- PROJECT Table
+-- -- PROJECT Table
 CREATE TABLE PROJECT (
     project_id INT AUTO_INCREMENT PRIMARY KEY,
     resume_id INT NOT NULL,
