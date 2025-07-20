@@ -87,7 +87,8 @@ const ResumeEditor = ({ selectedResume, resumeForm, onUpdateForm, onSave, onBack
 
         <div className="flex">
           {/* Form Panel */}
-          <div className="w-1/2 p-6 overflow-y-auto max-h-screen">
+          {/* <div className="w-1/2 p-6 overflow-y-auto max-h-screen"> */}
+          <div className="w-1/2 p-6 overflow-y-auto max-h-screen custom-scroll">
             <div className="space-y-8">
               {/* About Section */}
               <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
