@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Navigate, Route, BrowserRouter as Router, Routes, useNavigate } from 'react-router-dom';
 import './App.css';
+import CreateResumeModal from './components/CreateResumeModal';
 import Dashboard from './components/Dashboard';
 import LoginPage from './components/LoginPage';
 import ProfilePage from './components/ProfilePage';
 import ResumeEditor from './components/ResumeEditor';
 import SignupPage from './components/SignupPage';
-import CreateResumeModal from './components/CreateResumeModal';
 
 // Protected Route Component
 function ProtectedRoute({ children, isAuthenticated }) {
@@ -30,6 +30,15 @@ function AppContent() {
     message: '',
     type: 'success' // 'success' or 'error'
   });
+
+  const showNotification = (message, type) => { 
+  setNotification({
+    message,
+    type,
+    isVisible: true
+  });
+};
+
 
   const [resumeForm, setResumeForm] = useState({
     title: '',
@@ -646,6 +655,7 @@ function AppContent() {
                 currentUser={currentUser}
                 onBack={() => navigate('/dashboard')}
                 onUpdateUser={updateCurrentUser}
+                onShowNotification={showNotification}
               />
             </ProtectedRoute>
           }

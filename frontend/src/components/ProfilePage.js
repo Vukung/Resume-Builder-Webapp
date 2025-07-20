@@ -1,13 +1,13 @@
 import { Camera, Check, ChevronRight, Upload, User, X } from 'lucide-react';
 import { useState } from 'react';
 
-const ProfilePage = ({ currentUser, onBack, onUpdateUser }) => {
+const ProfilePage = ({ currentUser, onBack, onUpdateUser, onShowNotification }) => {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [uploading, setUploading] = useState(false);
   
-  // ADD: State for profile editing
+  // State for profile editing
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: currentUser?.name || '',
@@ -21,13 +21,21 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser }) => {
     if (file) {
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
+        if (typeof onShowNotification === 'function') {
+          onShowNotification('Please select an image file', 'error');
+        } else {
+          alert('Please select an image file');
+        }
         return;
       }
       
       // Validate file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
-        alert('File size must be less than 5MB');
+        if (typeof onShowNotification === 'function') {
+          onShowNotification('File size must be less than 5MB', 'error');
+        } else {
+          alert('File size must be less than 5MB');
+        }
         return;
       }
 
@@ -41,10 +49,10 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser }) => {
   // UPDATED: Add JWT token to refreshUserData function
   const refreshUserData = async () => {
     try {
-      const token = localStorage.getItem('token'); // GET TOKEN
+      const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:5000/api/profile/${currentUser.user_id}`, {
         headers: {
-          'Authorization': `Bearer ${token}` // ADD AUTHENTICATION HEADER
+          'Authorization': `Bearer ${token}`
         }
       });
       const userData = await response.json();
@@ -75,9 +83,9 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser }) => {
       const response = await fetch(`http://localhost:5000/api/profile/${currentUser.user_id}/upload`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}` // ADD AUTHENTICATION HEADER
+          'Authorization': `Bearer ${token}`
         },
-        body: formData // Don't add Content-Type for FormData
+        body: formData
       });
       
       const result = await response.json();
@@ -88,20 +96,34 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser }) => {
         setPreviewUrl(null);
         
         await refreshUserData();
-        alert('Profile picture updated successfully!');
+        
+        // Use notification system if available, fallback to alert
+        if (typeof onShowNotification === 'function') {
+          onShowNotification('Image has been uploaded successfully! 📸', 'success');
+        } else {
+          alert('Profile picture updated successfully!');
+        }
         
       } else {
-        alert('Failed to upload: ' + result.error);
+        if (typeof onShowNotification === 'function') {
+          onShowNotification('Failed to upload: ' + result.error, 'error');
+        } else {
+          alert('Failed to upload: ' + result.error);
+        }
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Upload failed. Please try again.');
+      if (typeof onShowNotification === 'function') {
+        onShowNotification('Upload failed. Please try again.', 'error');
+      } else {
+        alert('Upload failed. Please try again.');
+      }
     } finally {
       setUploading(false);
     }
   };
 
-  // ADD: Handle form input changes
+  // Handle form input changes
   const handleInputChange = (e) => {
     setFormData({
       ...formData,
@@ -109,7 +131,7 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser }) => {
     });
   };
 
-  // ADD: Save profile changes with JWT authentication
+  // Save profile changes with JWT authentication
   const handleSaveProfile = async () => {
     setSaving(true);
     
@@ -119,7 +141,7 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser }) => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` // ADD AUTHENTICATION HEADER
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(formData)
       });
@@ -132,13 +154,27 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser }) => {
           onUpdateUser(result.user);
         }
         setIsEditing(false);
-        alert('Profile updated successfully!');
+        
+        // Use notification system if available, fallback to alert
+        if (typeof onShowNotification === 'function') {
+          onShowNotification('Profile updated successfully! ✨', 'success');
+        } else {
+          alert('Profile updated successfully!');
+        }
       } else {
-        alert('Failed to update profile: ' + result.error);
+        if (typeof onShowNotification === 'function') {
+          onShowNotification('Failed to update profile: ' + result.error, 'error');
+        } else {
+          alert('Failed to update profile: ' + result.error);
+        }
       }
     } catch (error) {
       console.error('Save error:', error);
-      alert('Failed to save profile. Please try again.');
+      if (typeof onShowNotification === 'function') {
+        onShowNotification('Failed to save profile. Please try again.', 'error');
+      } else {
+        alert('Failed to save profile. Please try again.');
+      }
     } finally {
       setSaving(false);
     }
@@ -197,7 +233,7 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser }) => {
                 </button>
               </div>
 
-              {/* UPDATED: Make form fields editable */}
+              {/* Make form fields editable */}
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
@@ -235,7 +271,7 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser }) => {
                 </div>
               </div>
 
-              {/* UPDATED: Add edit/save functionality */}
+              {/* Edit/save functionality */}
               <div className="mt-6 pt-6 border-t border-gray-700">
                 {!isEditing ? (
                   <button 
@@ -274,7 +310,7 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser }) => {
         </div>
       </div>
 
-      {/* Upload Modal - stays the same */}
+      {/* Upload Modal */}
       {showUploadModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 rounded-xl shadow-2xl w-full max-w-md border border-gray-700">
