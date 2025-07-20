@@ -13,9 +13,6 @@ function ProtectedRoute({ children, isAuthenticated }) {
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 }
 
-
-
-
 // Main App Content Component
 function AppContent() {
   const [darkMode, setDarkMode] = useState(true);
@@ -26,6 +23,7 @@ function AppContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const navigate = useNavigate();
+  
   // Notification state
   const [notification, setNotification] = useState({
     show: false,
@@ -49,7 +47,25 @@ function AppContent() {
     document.documentElement.classList.toggle('dark', darkMode);
   }, [darkMode]);
 
-  // Auto-hide notification after 3 seconds
+  // ADD: Check for existing token on app startup
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+    
+    if (token && savedUser) {
+      try {
+        const user = JSON.parse(savedUser);
+        setCurrentUser(user);
+        loadResumes(user.user_id);
+      } catch (error) {
+        console.error('Error parsing saved user:', error);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
+    }
+  }, []);
+
+  // Auto-hide notification after 5 seconds
   useEffect(() => {
     if (notification.show) {
       const timer = setTimeout(() => {
@@ -67,13 +83,27 @@ function AppContent() {
     return date.toISOString().split('T')[0];
   };
 
+  // UPDATED: apiCall with JWT token authentication
   const apiCall = async (endpoint, options = {}) => {
     try {
+      const token = localStorage.getItem('token'); // Get stored token
+      
       console.log('Making API call to:', `${API_BASE}${endpoint}`);
       const response = await fetch(`${API_BASE}${endpoint}`, {
-        headers: { 'Content-Type': 'application/json', ...options.headers },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : '', // ADD AUTHENTICATION HEADER
+          ...options.headers 
+        },
         ...options
       });
+
+      // Handle authentication errors
+      if (response.status === 401 || response.status === 403) {
+        console.log('Authentication failed, logging out user');
+        handleLogout(); // Force logout if token is invalid
+        return { error: 'Authentication failed' };
+      }
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -88,7 +118,20 @@ function AppContent() {
     }
   };
 
-  // UPDATED: Enhanced login handler with notifications
+  // ADD: Update current user function for profile updates
+  const updateCurrentUser = (updatedUserData) => {
+    setCurrentUser(prev => ({
+      ...prev,
+      ...updatedUserData
+    }));
+    // Update localStorage as well
+    localStorage.setItem('user', JSON.stringify({
+      ...currentUser,
+      ...updatedUserData
+    }));
+  };
+
+  // UPDATED: Enhanced login handler with JWT token storage
   const handleLogin = async (loginForm) => {
     setIsLoading(true);
     console.log('Attempting login with:', loginForm);
@@ -101,8 +144,11 @@ function AppContent() {
 
       console.log('Login result:', result);
 
-      if (result.user) {
-        // Success: Silent login with smooth transition
+      if (result.user && result.token) { // Check for both user and token
+        // Store token and user in localStorage
+        localStorage.setItem('token', result.token);
+        localStorage.setItem('user', JSON.stringify(result.user));
+        
         setCurrentUser(result.user);
         loadResumes(result.user.user_id);
 
@@ -122,8 +168,7 @@ function AppContent() {
         // Error: Show user-friendly error notification
         setNotification({
           show: true,
-          // message: result.message || result.error || 'Invalid email or password',
-          message: '😔 Invalid email or password',
+          message: 'Invalid email or password',
           type: 'error'
         });
       }
@@ -204,9 +249,6 @@ function AppContent() {
     return result;
   };
 
-
-
-
   const createNewResume = async (title) => {
     console.log('Creating new resume with title:', title);
 
@@ -233,10 +275,6 @@ function AppContent() {
       });
     }
   };
-
-
-
-
 
   const duplicateResume = async (resumeId) => {
     console.log('Duplicating resume:', resumeId);
@@ -462,11 +500,16 @@ function AppContent() {
     }
   };
 
+  // UPDATED: Enhanced logout handler
   const handleLogout = async () => {
     console.log('Logging out user');
 
     // Call logout API
     await apiCall('/auth/logout', { method: 'POST' });
+
+    // Clear localStorage
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
 
     // Reset all state
     setCurrentUser(null);
@@ -495,23 +538,19 @@ function AppContent() {
     <>
       {/* Success/Error Notification */}
       {notification.show && (
-        <div className={`fixed top-20 right-4 z-100 transform transition-all duration-500 ease-in-out ${notification.show ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+        <div className={`fixed top-20 right-4 z-100 transform transition-all duration-500 ease-in-out ${
+          notification.show ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+        }`}>
+          <div className={`px-6 py-4 rounded-lg shadow-lg flex items-center max-w-sm ${
+            notification.type === 'success'
+              ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
+              : 'bg-gradient-to-r from-red-500 to-red-600 text-white'
           }`}>
-          <div className={`px-6 py-4 rounded-lg shadow-lg flex items-center max-w-sm ${notification.type === 'success'
-            ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
-            : 'bg-gradient-to-r from-red-500 to-red-600 text-white'
-            }`}>
-
-
-
             {notification.type === 'success' ? (
               <svg className="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
               </svg>
             ) : null} {/* No icon for errors */}
-
-
-
 
             <div className="flex-1">
               <p className="font-medium text-sm">{notification.message}</p>
@@ -527,9 +566,6 @@ function AppContent() {
           </div>
         </div>
       )}
-
-
-
 
       <Routes>
         {/* Public Routes */}
@@ -573,10 +609,7 @@ function AppContent() {
                 resumes={resumes}
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
-
-                // onCreateResume={createNewResume}
                 onCreateResume={() => setShowCreateModal(true)}
-
                 onEditResume={handleEditResume}
                 onDuplicateResume={duplicateResume}
                 onDeleteResume={deleteResume}
@@ -612,6 +645,7 @@ function AppContent() {
               <ProfilePage
                 currentUser={currentUser}
                 onBack={() => navigate('/dashboard')}
+                onUpdateUser={updateCurrentUser}
               />
             </ProtectedRoute>
           }
@@ -643,14 +677,13 @@ function AppContent() {
         />
       </Routes>
 
-      {/* modal component */}
+      {/* Modal component */}
       <CreateResumeModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSubmit={createNewResume}
         isLoading={isLoading}
       />
-
     </>
   );
 }

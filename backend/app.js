@@ -12,6 +12,8 @@ app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/template', require('./routes/templateRoutes'));
 app.use('/api/profile', require('./routes/profileRoutes'));
 app.use('/api/form', require('./routes/formRoutes'));
+// serves uploaded files
+app.use('/uploads', express.static('uploads'));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
