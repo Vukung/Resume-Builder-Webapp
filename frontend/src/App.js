@@ -6,11 +6,15 @@ import LoginPage from './components/LoginPage';
 import ProfilePage from './components/ProfilePage';
 import ResumeEditor from './components/ResumeEditor';
 import SignupPage from './components/SignupPage';
+import CreateResumeModal from './components/CreateResumeModal';
 
 // Protected Route Component
 function ProtectedRoute({ children, isAuthenticated }) {
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 }
+
+
+
 
 // Main App Content Component
 function AppContent() {
@@ -20,9 +24,9 @@ function AppContent() {
   const [resumes, setResumes] = useState([]);
   const [selectedResume, setSelectedResume] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const navigate = useNavigate();
-
-  // ADD THIS: Notification state
+  // Notification state
   const [notification, setNotification] = useState({
     show: false,
     message: '',
@@ -200,10 +204,10 @@ function AppContent() {
     return result;
   };
 
-  const createNewResume = async () => {
-    const title = prompt('Enter resume title:');
-    if (!title) return;
 
+
+
+  const createNewResume = async (title) => {
     console.log('Creating new resume with title:', title);
 
     const result = await apiCall('/resume/create', {
@@ -220,6 +224,7 @@ function AppContent() {
         type: 'success'
       });
       loadResumes(currentUser.user_id);
+      setShowCreateModal(false); // Close modal on success
     } else {
       setNotification({
         show: true,
@@ -228,6 +233,10 @@ function AppContent() {
       });
     }
   };
+
+
+
+
 
   const duplicateResume = async (resumeId) => {
     console.log('Duplicating resume:', resumeId);
@@ -489,10 +498,10 @@ function AppContent() {
         <div className={`fixed top-20 right-4 z-100 transform transition-all duration-500 ease-in-out ${notification.show ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
           }`}>
           <div className={`px-6 py-4 rounded-lg shadow-lg flex items-center max-w-sm ${notification.type === 'success'
-              ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
-              : 'bg-gradient-to-r from-red-500 to-red-600 text-white'
+            ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
+            : 'bg-gradient-to-r from-red-500 to-red-600 text-white'
             }`}>
-            
+
 
 
             {notification.type === 'success' ? (
@@ -518,6 +527,9 @@ function AppContent() {
           </div>
         </div>
       )}
+
+
+
 
       <Routes>
         {/* Public Routes */}
@@ -561,7 +573,10 @@ function AppContent() {
                 resumes={resumes}
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
-                onCreateResume={createNewResume}
+
+                // onCreateResume={createNewResume}
+                onCreateResume={() => setShowCreateModal(true)}
+
                 onEditResume={handleEditResume}
                 onDuplicateResume={duplicateResume}
                 onDeleteResume={deleteResume}
@@ -627,6 +642,15 @@ function AppContent() {
           }
         />
       </Routes>
+
+      {/* modal component */}
+      <CreateResumeModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSubmit={createNewResume}
+        isLoading={isLoading}
+      />
+
     </>
   );
 }
