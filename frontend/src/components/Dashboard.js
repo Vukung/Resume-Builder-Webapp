@@ -12,12 +12,12 @@ const Header = ({ currentUser, darkMode, onToggleDarkMode, onLogout, onProfile }
       </div>
       
       <div className="flex items-center space-x-4">
-        <button
-          onClick={onToggleDarkMode}
-          className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
-        >
-          {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-        </button>
+        // <button
+        //   onClick={onToggleDarkMode}
+        //   className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+        // >
+        //   {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+        // </button>
         <button
           onClick={onProfile}
           className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
