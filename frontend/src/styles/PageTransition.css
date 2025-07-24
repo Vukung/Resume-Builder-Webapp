@@ -1,0 +1,58 @@
+.page-transition-container {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* Black overlay that covers everything during transition */
+.black-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #000000;
+  z-index: 10000;
+  transition: opacity 0.3s ease-in-out;
+  pointer-events: none;
+}
+
+.overlay-hidden {
+  opacity: 0;
+}
+
+.overlay-visible {
+  opacity: 1;
+}
+
+/* Page content styling */
+.page-content {
+  width: 100%;
+  min-height: 100vh;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.content-visible {
+  opacity: 1;
+}
+
+.content-hidden {
+  opacity: 0;
+}
+
+/* Ensure body background is controlled */
+body {
+  background-color: #000000 !important;
+  margin: 0;
+  padding: 0;
+}
+
+/* Reset any conflicting styles */
+* {
+  box-sizing: border-box;
+}
+
+#root {
+  background-color: transparent;
+}

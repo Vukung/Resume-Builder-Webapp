@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Navigate, Route, BrowserRouter as Router, Routes, useNavigate } from 'react-router-dom';
+import { Navigate, Route, BrowserRouter as Router, Routes, useNavigate, useLocation } from 'react-router-dom';
 import './App.css';
 import CreateResumeModal from './components/CreateResumeModal';
 import Dashboard from './components/Dashboard';
@@ -7,6 +7,11 @@ import LoginPage from './components/LoginPage';
 import ProfilePage from './components/ProfilePage';
 import ResumeEditor from './components/ResumeEditor';
 import SignupPage from './components/SignupPage';
+
+// Import the transition components
+import PageTransition from './components/PageTransition';
+import { usePageTransition } from './hooks/usePageTransition';
+import './styles/PageTransition.css'; 
 
 // Protected Route Component
 function ProtectedRoute({ children, isAuthenticated }) {
@@ -22,26 +27,26 @@ function AppContent() {
   const [selectedResume, setSelectedResume] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  
+  // Add transition hooks
   const navigate = useNavigate();
+  const location = useLocation();
+  const { isTransitioning, transitionToPage } = usePageTransition();
   
   // Notification state
   const [notification, setNotification] = useState({
     show: false,
     message: '',
-    type: 'success' // 'success' or 'error'
+    type: 'success'
   });
 
   const showNotification = (message, type) => { 
-  setNotification({
-    message,
-    type,
-    isVisible: true
-  });
-};
-
-
-
-
+    setNotification({
+      show: true, // Fixed: was isVisible, should be show
+      message,
+      type
+    });
+  };
 
   const [resumeForm, setResumeForm] = useState({
     title: '',
@@ -52,24 +57,6 @@ function AppContent() {
     certifications: [{ cert_name: '', issuer: '' }]
   });
 
-
-
-// Load theme preference
-useEffect(() => {
-  const savedTheme = localStorage.getItem('theme');
-  if (savedTheme) {
-    setIsDarkMode(savedTheme === 'dark');
-  }
-}, []);
-
-
-
-
-
-
-
-
-
   // Backend running on port 5000
   const API_BASE = 'http://localhost:5000/api';
 
@@ -77,7 +64,24 @@ useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
   }, [darkMode]);
 
-  // ADD: Check for existing token on app startup
+  // Theme state
+  const [isDarkMode, setIsDarkMode] = useState(true);
+
+  // Load theme preference
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      setIsDarkMode(savedTheme === 'dark');
+    }
+  }, []);
+
+  // Theme toggle function
+  const toggleTheme = () => {
+    setIsDarkMode(prev => !prev);
+    localStorage.setItem('theme', !isDarkMode ? 'dark' : 'light');
+  };
+
+  // CHECK FOR EXISTING TOKEN ON APP STARTUP
   useEffect(() => {
     const token = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
@@ -98,40 +102,12 @@ useEffect(() => {
   // Auto-hide notification after 5 seconds
   useEffect(() => {
     if (notification.show) {
-      const timer = setTimeout(() => {
+      // const timer = setTimeout(() => {
         setNotification({ show: false, message: '', type: 'success' });
-      }, 5000);
-      return () => clearTimeout(timer);
+      // }, 5000);
+      // return () => clearTimeout(timer);
     }
   }, [notification.show]);
-
-
-
-
-
-
-
-
-
-
-
-
-// Theme state
-const [isDarkMode, setIsDarkMode] = useState(true); // Default to dark mode
-
-// Theme toggle function
-const toggleTheme = () => {
-  setIsDarkMode(prev => !prev);
-  // Save preference to localStorage
-  localStorage.setItem('theme', !isDarkMode ? 'dark' : 'light');
-};
-
-
-
-
-
-
-
 
   // Helper function to format date for HTML input
   const formatDateForInput = (dateString) => {
@@ -141,25 +117,65 @@ const toggleTheme = () => {
     return date.toISOString().split('T')[0];
   };
 
+  // FIXED: Complete handleLogout function
+  const handleLogout = async () => {
+    console.log('Logging out user');
+
+    // Start transition FIRST (before any navigation)
+    transitionToPage(async () => {
+      // Call logout API during transition
+      await apiCall('/auth/logout', { method: 'POST' });
+
+      // Clear localStorage
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+
+      // Reset all state
+      setCurrentUser(null);
+      setResumes([]);
+      setSelectedResume(null);
+      setSearchQuery('');
+      setResumeForm({
+        title: '',
+        about_text: '',
+        education: [{ institution_name: '', degree: '', start_date_edu: '', end_date_edu: '' }],
+        experience: [{ job_title: '', company_name: '', start_date_ex: '', end_date_ex: '' }],
+        projects: [{ project_name: '', tech_stack: '', proj_desc: '', proj_link: '' }],
+        certifications: [{ cert_name: '', issuer: '' }]
+      });
+
+      // Navigate LAST (after transition starts)
+      navigate('/login');
+      
+      // Show notification after navigation
+      setTimeout(() => {
+        setNotification({
+          show: true,
+          message: 'Logged out successfully!',
+          type: 'success'
+        });
+      }, 100);
+    }, 400);
+  };
+
   // UPDATED: apiCall with JWT token authentication
   const apiCall = async (endpoint, options = {}) => {
     try {
-      const token = localStorage.getItem('token'); // Get stored token
+      const token = localStorage.getItem('token');
       
       console.log('Making API call to:', `${API_BASE}${endpoint}`);
       const response = await fetch(`${API_BASE}${endpoint}`, {
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : '', // ADD AUTHENTICATION HEADER
+          'Authorization': token ? `Bearer ${token}` : '',
           ...options.headers 
         },
         ...options
       });
 
-      // Handle authentication errors
       if (response.status === 401 || response.status === 403) {
         console.log('Authentication failed, logging out user');
-        handleLogout(); // Force logout if token is invalid
+        handleLogout();
         return { error: 'Authentication failed' };
       }
 
@@ -176,20 +192,26 @@ const toggleTheme = () => {
     }
   };
 
-  // ADD: Update current user function for profile updates
+  // Update current user function for profile updates
   const updateCurrentUser = (updatedUserData) => {
     setCurrentUser(prev => ({
       ...prev,
       ...updatedUserData
     }));
-    // Update localStorage as well
     localStorage.setItem('user', JSON.stringify({
       ...currentUser,
       ...updatedUserData
     }));
   };
 
-  // UPDATED: Enhanced login handler with JWT token storage
+  // Navigation helpers with transitions
+  const navigateWithTransition = (path) => {
+    transitionToPage(() => {
+      navigate(path);
+    }, 400);
+  };
+
+  // SINGLE handleLogin function
   const handleLogin = async (loginForm) => {
     setIsLoading(true);
     console.log('Attempting login with:', loginForm);
@@ -200,30 +222,36 @@ const toggleTheme = () => {
         body: JSON.stringify(loginForm)
       });
 
-      console.log('Login result:', result);
-
-      if (result.user && result.token) { // Check for both user and token
-        // Store token and user in localStorage
+      if (result.user && result.token) {
         localStorage.setItem('token', result.token);
         localStorage.setItem('user', JSON.stringify(result.user));
         
+        // setCurrentUser(result.user);
+        // loadResumes(result.user.user_id);
+
+        // setNotification({
+        //   show: true,
+        //   message: `Welcome back, ${result.user.name || 'User'}!`,
+        //   type: 'success'
+        // });
+
+        // Use transition BEFORE navigation
+        transitionToPage(() => {
+          // Set user state DURING the black transition
         setCurrentUser(result.user);
         loadResumes(result.user.user_id);
+        // Navigate to dashboard
+          navigate('/dashboard');
+        }, 400);
 
-        // Show subtle success notification
+
         setNotification({
           show: true,
           message: `Welcome back, ${result.user.name || 'User'}!`,
           type: 'success'
         });
 
-        // Navigate after brief delay for smooth UX
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 1500);
-
       } else {
-        // Error: Show user-friendly error notification
         setNotification({
           show: true,
           message: 'Invalid email or password',
@@ -242,7 +270,7 @@ const toggleTheme = () => {
     }
   };
 
-  // UPDATED: Enhanced signup handler with notifications
+  // SINGLE handleSignup function
   const handleSignup = async (signupForm) => {
     setIsLoading(true);
     console.log('Attempting signup with:', signupForm);
@@ -253,15 +281,17 @@ const toggleTheme = () => {
         body: JSON.stringify(signupForm)
       });
 
-      console.log('Signup result:', result);
-
       if (result.userId) {
         setNotification({
           show: true,
           message: 'Account created successfully! Please login.',
           type: 'success'
         });
-        setTimeout(() => navigate('/login'), 2000);
+        
+        // Use transition BEFORE navigation
+        transitionToPage(() => {
+          navigate('/login');
+        }, 400);
       } else {
         setNotification({
           show: true,
@@ -283,7 +313,6 @@ const toggleTheme = () => {
   const loadResumes = async (userId) => {
     console.log('Loading resumes for user:', userId);
     const result = await apiCall(`/resume/${userId}`);
-    console.log('Resumes loaded:', result);
 
     if (Array.isArray(result)) {
       setResumes(result);
@@ -295,15 +324,12 @@ const toggleTheme = () => {
 
   const loadResumeData = async (resumeId) => {
     console.log('Loading resume data for:', resumeId);
-
     const result = await apiCall(`/resume/data/${resumeId}`);
-    console.log('Resume data loaded:', result);
 
     if (result.error) {
       console.error('Failed to load resume data:', result.error);
       return null;
     }
-
     return result;
   };
 
@@ -315,8 +341,6 @@ const toggleTheme = () => {
       body: JSON.stringify({ user_id: currentUser.user_id, title })
     });
 
-    console.log('Create resume result:', result);
-
     if (result.resumeId) {
       setNotification({
         show: true,
@@ -324,7 +348,7 @@ const toggleTheme = () => {
         type: 'success'
       });
       loadResumes(currentUser.user_id);
-      setShowCreateModal(false); // Close modal on success
+      setShowCreateModal(false);
     } else {
       setNotification({
         show: true,
@@ -340,8 +364,6 @@ const toggleTheme = () => {
     const result = await apiCall(`/resume/duplicate/${resumeId}`, {
       method: 'POST'
     });
-
-    console.log('Duplicate result:', result);
 
     if (result.newId) {
       setNotification({
@@ -364,13 +386,9 @@ const toggleTheme = () => {
       return;
     }
 
-    console.log('Deleting resume:', resumeId);
-
     const result = await apiCall(`/resume/delete/${resumeId}`, {
       method: 'POST'
     });
-
-    console.log('Delete result:', result);
 
     if (result.message) {
       setNotification({
@@ -392,11 +410,9 @@ const toggleTheme = () => {
     console.log('Editing resume:', resume);
     setSelectedResume(resume);
 
-    // Load existing resume data
     const resumeData = await loadResumeData(resume.resume_id);
 
     if (resumeData) {
-      // Populate form with existing data
       setResumeForm({
         title: resumeData.title || '',
         about_text: resumeData.about?.about_text || '',
@@ -405,11 +421,9 @@ const toggleTheme = () => {
           degree: edu.degree || '',
           start_date_edu: formatDateForInput(edu.start_date_edu),
           end_date_edu: formatDateForInput(edu.end_date_edu),
-          grade_type: edu.grade_type || 'percentage', // Default to 'percentage' if null
+          grade_type: edu.grade_type || 'percentage',
           grade_value: edu.grade_value || ''
-
-
-        })) : [{ institution_name: '', degree: '', start_date_edu: '', end_date_edu: '', grade_type: 'percentage', grade_value: ''  }],
+        })) : [{ institution_name: '', degree: '', start_date_edu: '', end_date_edu: '', grade_type: 'percentage', grade_value: '' }],
         experience: resumeData.experience.length > 0 ? resumeData.experience.map(exp => ({
           job_title: exp.job_title || '',
           company_name: exp.company_name || '',
@@ -428,7 +442,6 @@ const toggleTheme = () => {
         })) : [{ cert_name: '', issuer: '' }]
       });
     } else {
-      // If no data found, use empty form
       setResumeForm({
         title: resume.title || '',
         about_text: '',
@@ -439,8 +452,10 @@ const toggleTheme = () => {
       });
     }
 
-    // Navigate to editor with resume ID in URL
-    navigate(`/resume/${resume.resume_id}/edit`);
+    // Use transition for navigation to editor
+    transitionToPage(() => {
+      navigate(`/resume/${resume.resume_id}/edit`);
+    });
   };
 
   const saveResumeData = async () => {
@@ -453,10 +468,8 @@ const toggleTheme = () => {
       return;
     }
 
-    console.log('Saving resume data:', resumeForm);
-
     try {
-      // Clear existing data first (to avoid duplicates)
+      // Clear existing data first
       await apiCall('/form/clear-education', {
         method: 'POST',
         body: JSON.stringify({ resume_id: selectedResume.resume_id })
@@ -479,71 +492,66 @@ const toggleTheme = () => {
 
       // Save about info
       if (resumeForm.about_text && resumeForm.about_text.trim() !== '') {
-        const aboutResult = await apiCall('/form/about', {
+        await apiCall('/form/about', {
           method: 'POST',
           body: JSON.stringify({
             resume_id: selectedResume.resume_id,
             about_text: resumeForm.about_text
           })
         });
-        console.log('About saved:', aboutResult);
       }
 
-      // Save education entries (only if they have data)
+      // Save education entries
       for (const edu of resumeForm.education) {
         if ((edu.institution_name && edu.institution_name.trim() !== '') ||
           (edu.degree && edu.degree.trim() !== '')) {
-          const eduResult = await apiCall('/form/education', {
+          await apiCall('/form/education', {
             method: 'POST',
             body: JSON.stringify({
               resume_id: selectedResume.resume_id,
               ...edu
             })
           });
-          console.log('Education saved:', eduResult);
         }
       }
 
-      // Save experience entries (only if they have data)
+      // Save experience entries
       for (const exp of resumeForm.experience) {
         if ((exp.job_title && exp.job_title.trim() !== '') ||
           (exp.company_name && exp.company_name.trim() !== '')) {
-          const expResult = await apiCall('/form/experience', {
+          await apiCall('/form/experience', {
             method: 'POST',
             body: JSON.stringify({
               resume_id: selectedResume.resume_id,
               ...exp
             })
           });
-          console.log('Experience saved:', expResult);
         }
       }
 
-      // Save project entries (only if they have project name)
+      // Save project entries
       for (const proj of resumeForm.projects) {
         if (proj.project_name && proj.project_name.trim() !== '') {
-          const projResult = await apiCall('/form/projects', {
+          await apiCall('/form/projects', {
             method: 'POST',
             body: JSON.stringify({
               resume_id: selectedResume.resume_id,
               ...proj
             })
           });
-          console.log('Project saved:', projResult);
         }
       }
 
-      // Save certification entries (only if they have cert name)
+      // Save certification entries
       for (const cert of resumeForm.certifications) {
         if (cert.cert_name && cert.cert_name.trim() !== '') {
-          const certResult = await apiCall('/form/certifications', {
+          await apiCall('/form/certifications', {
             method: 'POST',
             body: JSON.stringify({
               resume_id: selectedResume.resume_id,
               ...cert
             })
           });
-          console.log('Certification saved:', certResult);
         }
       }
 
@@ -562,40 +570,6 @@ const toggleTheme = () => {
     }
   };
 
-  // UPDATED: Enhanced logout handler
-  const handleLogout = async () => {
-    console.log('Logging out user');
-
-    // Call logout API
-    await apiCall('/auth/logout', { method: 'POST' });
-
-    // Clear localStorage
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-
-    // Reset all state
-    setCurrentUser(null);
-    setResumes([]);
-    setSelectedResume(null);
-    setSearchQuery('');
-    setResumeForm({
-      title: '',
-      about_text: '',
-      education: [{ institution_name: '', degree: '', start_date_edu: '', end_date_edu: '' }],
-      experience: [{ job_title: '', company_name: '', start_date_ex: '', end_date_ex: '' }],
-      projects: [{ project_name: '', tech_stack: '', proj_desc: '', proj_link: '' }],
-      certifications: [{ cert_name: '', issuer: '' }]
-    });
-
-    setNotification({
-      show: true,
-      message: 'Logged out successfully!',
-      type: 'success'
-    });
-
-    setTimeout(() => navigate('/login'), 1500);
-  };
-
   return (
     <>
       {/* Success/Error Notification */}
@@ -608,11 +582,11 @@ const toggleTheme = () => {
               ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
               : 'bg-gradient-to-r from-red-500 to-red-600 text-white'
           }`}>
-            {notification.type === 'success' ? (
+            {notification.type === 'success' && (
               <svg className="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
               </svg>
-            ) : null} {/* No icon for errors */}
+            )}
 
             <div className="flex-1">
               <p className="font-medium text-sm">{notification.message}</p>
@@ -629,116 +603,119 @@ const toggleTheme = () => {
         </div>
       )}
 
-      <Routes>
-        {/* Public Routes */}
-        <Route
-          path="/login"
-          element={
-            currentUser ? (
-              <Navigate to="/dashboard" replace />
-            ) : (
-              <LoginPage
-                onLogin={handleLogin}
-                onSwitchToSignup={() => navigate('/signup')}
-                isLoading={isLoading}
-              />
-            )
-          }
-        />
+      {/* Wrap Routes with PageTransition */}
+      <PageTransition isTransitioning={isTransitioning}>
+        <Routes>
+          {/* Public Routes */}
+          <Route
+            path="/login"
+            element={
+              currentUser ? (
+                <Navigate to="/dashboard" replace />
+              ) : (
+                <LoginPage
+                  onLogin={handleLogin}
+                  onSwitchToSignup={() => navigateWithTransition('/signup')}
+                  isLoading={isLoading}
+                />
+              )
+            }
+          />
 
-        <Route
-          path="/signup"
-          element={
-            currentUser ? (
-              <Navigate to="/dashboard" replace />
-            ) : (
-              <SignupPage
-                onSignup={handleSignup}
-                onSwitchToLogin={() => navigate('/login')}
-                isLoading={isLoading}
-              />
-            )
-          }
-        />
+          <Route
+            path="/signup"
+            element={
+              currentUser ? (
+                <Navigate to="/dashboard" replace />
+              ) : (
+                <SignupPage
+                  onSignup={handleSignup}
+                  onSwitchToLogin={() => navigateWithTransition('/login')}
+                  isLoading={isLoading}
+                />
+              )
+            }
+          />
 
-        {/* Protected Routes */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute isAuthenticated={!!currentUser}>
-              <Dashboard
-                currentUser={currentUser}
-                resumes={resumes}
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-                onCreateResume={() => setShowCreateModal(true)}
-                onEditResume={handleEditResume}
-                onDuplicateResume={duplicateResume}
-                onDeleteResume={deleteResume}
-                darkMode={darkMode}
-                onToggleDarkMode={() => setDarkMode(!darkMode)}
-                onLogout={handleLogout}
-                onProfile={() => navigate('/profile')}
-              />
-            </ProtectedRoute>
-          }
-        />
+          {/* Protected Routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute isAuthenticated={!!currentUser}>
+                <Dashboard
+                  currentUser={currentUser}
+                  resumes={resumes}
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  onCreateResume={() => setShowCreateModal(true)}
+                  onEditResume={handleEditResume}
+                  onDuplicateResume={duplicateResume}
+                  onDeleteResume={deleteResume}
+                  darkMode={darkMode}
+                  onToggleDarkMode={() => setDarkMode(!darkMode)}
+                  onLogout={handleLogout}
+                  onProfile={() => navigateWithTransition('/profile')}
+                />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/resume/:id/edit"
-          element={
-            <ProtectedRoute isAuthenticated={!!currentUser}>
-              <ResumeEditor
-                selectedResume={selectedResume}
-                resumeForm={resumeForm}
-                onUpdateForm={setResumeForm}
-                onSave={saveResumeData}
-                onBack={() => navigate('/dashboard')}
-                currentUser={currentUser}
-              />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/resume/:id/edit"
+            element={
+              <ProtectedRoute isAuthenticated={!!currentUser}>
+                <ResumeEditor
+                  selectedResume={selectedResume}
+                  resumeForm={resumeForm}
+                  onUpdateForm={setResumeForm}
+                  onSave={saveResumeData}
+                  onBack={() => navigateWithTransition('/dashboard')}
+                  currentUser={currentUser}
+                />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute isAuthenticated={!!currentUser}>
-              <ProfilePage
-                currentUser={currentUser}
-                onBack={() => navigate('/dashboard')}
-                onUpdateUser={updateCurrentUser}
-                onShowNotification={showNotification}
-              />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute isAuthenticated={!!currentUser}>
+                <ProfilePage
+                  currentUser={currentUser}
+                  onBack={() => navigateWithTransition('/dashboard')}
+                  onUpdateUser={updateCurrentUser}
+                  onShowNotification={showNotification}
+                />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Default Route */}
-        <Route
-          path="/"
-          element={<Navigate to={currentUser ? "/dashboard" : "/login"} replace />}
-        />
+          {/* Default Route */}
+          <Route
+            path="/"
+            element={<Navigate to={currentUser ? "/dashboard" : "/login"} replace />}
+          />
 
-        {/* 404 Route */}
-        <Route
-          path="*"
-          element={
-            <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-              <div className="text-center">
-                <h1 className="text-4xl font-bold text-white mb-4">404</h1>
-                <p className="text-gray-400 mb-4">Page not found</p>
-                <button
-                  onClick={() => navigate('/')}
-                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                >
-                  Go Home
-                </button>
+          {/* 404 Route */}
+          <Route
+            path="*"
+            element={
+              <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+                <div className="text-center">
+                  <h1 className="text-4xl font-bold text-white mb-4">404</h1>
+                  <p className="text-gray-400 mb-4">Page not found</p>
+                  <button
+                    onClick={() => navigateWithTransition('/')}
+                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                  >
+                    Go Home
+                  </button>
+                </div>
               </div>
-            </div>
-          }
-        />
-      </Routes>
+            }
+          />
+        </Routes>
+      </PageTransition>
 
       {/* Modal component */}
       <CreateResumeModal
