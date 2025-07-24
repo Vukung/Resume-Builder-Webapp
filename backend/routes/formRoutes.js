@@ -38,32 +38,26 @@ router.post('/about', (req, res) => {
   });
 });
 
-// --- CORRECTED EDUCATION ROUTE ---
 // Education - Corrected to save grade information
 router.post('/education', (req, res) => {
-  // Destructure all fields from the request body
   const { resume_id, institution_name, degree, start_date_edu, end_date_edu, grade_type, grade_value } = req.body;
 
-  // Only save if at least institution or degree is provided
   if ((!institution_name || institution_name.trim() === '') && 
       (!degree || degree.trim() === '')) {
     return res.status(200).json({ message: 'Education skipped (empty)' });
   }
   
-  // Handle optional and null values correctly
   const startDate = start_date_edu || null;
   const endDate = end_date_edu || null;
-  const final_grade_type = grade_type || 'percentage'; // Default to 'percentage'
+  const final_grade_type = grade_type || 'percentage';
   const final_grade_value = (grade_value && String(grade_value).trim() !== '') ? grade_value : null;
 
-  // Update SQL query with correct number of columns and placeholders
   const sql = `
     INSERT INTO EDUCATION 
     (resume_id, institution_name, degree, start_date_edu, end_date_edu, grade_type, grade_value) 
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `;
   
-  // Add missing grade fields to the values array
   const values = [
     resume_id, 
     institution_name || null, 
@@ -83,8 +77,9 @@ router.post('/education', (req, res) => {
   });
 });
 
-// Experience - Only save if at least one field is filled
+// --- CORRECTED EXPERIENCE ROUTE ---
 router.post('/experience', (req, res) => {
+  // Destructure all fields, including ex_desc
   const { resume_id, job_title, company_name, start_date_ex, end_date_ex, ex_desc } = req.body;
   
   if ((!job_title || job_title.trim() === '') && 
@@ -92,19 +87,34 @@ router.post('/experience', (req, res) => {
     return res.status(200).json({ message: 'Experience skipped (empty)' });
   }
   
-  const startDate = start_date_ex && start_date_ex !== '' ? start_date_ex : null;
-  const endDate = end_date_ex && end_date_ex !== '' ? end_date_ex : null;
+  const startDate = start_date_ex || null;
+  const endDate = end_date_ex || null;
+  const final_ex_desc = ex_desc || null;
 
-
+  // Update the SQL query to include ex_desc
+  const sql = `
+    INSERT INTO EXPERIENCE 
+    (resume_id, job_title, company_name, start_date_ex, end_date_ex, ex_desc) 
+    VALUES (?, ?, ?, ?, ?, ?)
+  `;
   
-  db.query('INSERT INTO EXPERIENCE (resume_id, job_title, company_name, start_date_ex, end_date_ex, ex_desc) VALUES (?, ?, ?, ?, ?, ?)',
-    [resume_id, job_title || null, company_name || null, startDate, endDate], (err) => {
-      if (err) {
-        console.error('Experience insert error:', err);
-        return res.status(500).json({ error: err });
-      }
-      res.status(201).json({ message: 'Experience saved' });
-    });
+  // Add ex_desc to the values array
+  const values = [
+    resume_id, 
+    job_title || null, 
+    company_name || null, 
+    startDate, 
+    endDate,
+    final_ex_desc 
+  ];
+  
+  db.query(sql, values, (err) => {
+    if (err) {
+      console.error('Experience insert error:', err);
+      return res.status(500).json({ error: 'Database error while saving experience.' });
+    }
+    res.status(201).json({ message: 'Experience saved' });
+  });
 });
 
 // Projects - Only save if project name is provided
