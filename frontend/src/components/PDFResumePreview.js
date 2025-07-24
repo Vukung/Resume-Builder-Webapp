@@ -1,57 +1,35 @@
+import React from 'react';
 
 const PDFResumePreview = ({ resumeForm, currentUser }) => {
-  // const formatDate = (dateString) => {
-  //   if (!dateString) return '';
-  //   const date = new Date(dateString);
-  //   if (isNaN(date.getTime())) return '';
+  // --- CLEANED UP DATE HELPERS ---
 
-  //   const day = String(date.getDate()).padStart(2, '0');
-  //   const month = String(date.getMonth() + 1).padStart(2, '0');
-  //   const year = date.getFullYear();
+  // For Education Section: Returns only the year (e.g., "2026")
+  const formatYearOnly = (dateString) => {
+    if (!dateString) return '';
+    return dateString.slice(0, 4);
+  };
 
-  //   return `${day}/${month}/${year}`;
-  // };
-
-
-
-
-
+  // For Experience Section: Returns month and year (e.g., "Jul 2025")
   const formatMonthYear = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return '';
     return date.toLocaleString('en-US', { month: 'short', year: 'numeric' });
   };
-
-  const formatExperienceRange = (start, end) => {
-    if (!start && !end) return '';
-    if (!start) return formatMonthYear(end);
-    if (!end) return formatMonthYear(start);
-    return `${formatMonthYear(start)} - ${formatMonthYear(end)}`;
-  };
-
-
-
-
-
-  const formatDate = (dateString) => {
-    if (!dateString) return '';
-    return dateString.slice(0, 4);
-  };
-
-
-  const formatDateRange = (startDate, endDate) => {
-    const start = formatDate(startDate);
-    const end = endDate ? formatDate(endDate) : 'Present';
+  
+  // Creates the date range string for experience (e.g., "Jan 2024 - Jul 2025")
+  const formatExperienceDateRange = (startDate, endDate) => {
+    const start = formatMonthYear(startDate);
+    const end = endDate ? formatMonthYear(endDate) : 'Present';
     if (!start && !end) return '';
     if (!start) return end;
+    if (!end) return start; // If only start date is present
     return `${start} - ${end}`;
   };
 
   // Format grade display based on type
   const formatGrade = (gradeType, gradeValue) => {
     if (!gradeValue || gradeValue === '') return '';
-
     if (gradeType === 'cgpa') {
       return `CGPA ${gradeValue}/10`;
     } else {
@@ -84,12 +62,8 @@ const PDFResumePreview = ({ resumeForm, currentUser }) => {
           {currentUser?.name || 'Your Name'}
         </h1>
         <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap', fontSize: '11px', color: '#666' }}>
-          {currentUser?.email && (
-            <span>📧 {currentUser.email}</span>
-          )}
-          {currentUser?.phone_num && (
-            <span>📞 {currentUser.phone_num}</span>
-          )}
+          {currentUser?.email && <span>📧 {currentUser.email}</span>}
+          {currentUser?.phone_num && <span>📞 {currentUser.phone_num}</span>}
           <span>📍 Your City, State</span>
         </div>
       </div>
@@ -106,7 +80,7 @@ const PDFResumePreview = ({ resumeForm, currentUser }) => {
         </div>
       )}
 
-      {/* Experience - Updated to show only end date */}
+      {/* --- UPDATED EXPERIENCE SECTION --- */}
       {resumeForm.experience.some(exp => exp.job_title || exp.company_name) && (
         <div style={{ marginBottom: '25px' }}>
           <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#1a1a1a', marginBottom: '10px', borderBottom: '1px solid #ccc', paddingBottom: '5px' }}>
@@ -115,30 +89,42 @@ const PDFResumePreview = ({ resumeForm, currentUser }) => {
           {resumeForm.experience.map((exp, index) => (
             (exp.job_title || exp.company_name) && (
               <div key={index} style={{ marginBottom: '15px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '5px' }}>
-                  <div>
-                    <h3 style={{ fontSize: '14px', fontWeight: 'bold', margin: '0', color: '#1a1a1a' }}>
-                      {exp.job_title}
-                    </h3>
-                    <p style={{ fontSize: '12px', color: '#0066cc', margin: '2px 0', fontWeight: '600' }}>
-                      {exp.company_name}
-                    </p>
-                  </div>
+                {/* Line 1: Job Title and Date Range */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '3px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 'bold', margin: '0', color: '#1a1a1a' }}>
+                    {exp.job_title}
+                  </h3>
                   {(exp.start_date_ex || exp.end_date_ex) && (
-                    <span style={{ fontSize: '10px', color: '#666', backgroundColor: '#f5f5f5', padding: '4px 8px', borderRadius: '4px' }}>
-                      {formatExperienceRange(exp.start_date_ex, exp.end_date_ex)}
+                    <span style={{ fontSize: '10px', color: '#666', whiteSpace: 'nowrap', paddingLeft: '10px' }}>
+                      {formatExperienceDateRange(exp.start_date_ex, exp.end_date_ex)}
                     </span>
                   )}
-
                 </div>
+
+                {/* Line 2: Company Name */}
+                <p style={{ fontSize: '12px', color: '#0066cc', margin: '0 0 5px 0', fontWeight: '600' }}>
+                  {exp.company_name}
+                </p>
+
+                {/* Description Bullet Points */}
+                {exp.ex_desc && (
+                  <ul style={{ margin: '0 0 0 20px', padding: '0', listStyleType: 'disc' }}>
+                    {exp.ex_desc.split('\n').map((point, i) => (
+                      point.replace(/^•\s*/, '').trim() && (
+                        <li key={i} style={{ marginBottom: '4px', lineHeight: '1.4', color: '#333' }}>
+                          {point.replace(/^•\s*/, '')}
+                        </li>
+                      )
+                    ))}
+                  </ul>
+                )}
               </div>
             )
           ))}
         </div>
       )}
 
-      {/* Education - Updated with Grade Support */}
-      {/* Education - Updated with Better 2-line Formatting */}
+      {/* Education */}
       {resumeForm.education.some(edu => edu.institution_name || edu.degree) && (
         <div style={{ marginBottom: '25px' }}>
           <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#1a1a1a', marginBottom: '10px', borderBottom: '1px solid #ccc', paddingBottom: '5px' }}>
@@ -147,29 +133,22 @@ const PDFResumePreview = ({ resumeForm, currentUser }) => {
           {resumeForm.education.map((edu, index) => (
             (edu.institution_name || edu.degree) && (
               <div key={index} style={{ marginBottom: '15px' }}>
-                {/* Line 1: Institution Name and Year */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
                   <h3 style={{ fontSize: '13px', fontWeight: 'bold', margin: '0', color: '#1a1a1a' }}>
                     {edu.institution_name}
                   </h3>
                   {edu.end_date_edu && (
                     <span style={{ fontSize: '11px', color: '#666', fontWeight: '600' }}>
-                      {formatDate(edu.end_date_edu)}
+                      {formatYearOnly(edu.end_date_edu)}
                     </span>
                   )}
                 </div>
-
-                {/* Line 2: Degree, Grade (if exists) */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <p style={{ fontSize: '12px', color: '#0066cc', margin: '0', fontWeight: '600' }}>
                     {edu.degree}
                   </p>
                   {edu.grade_value && (
-                    <span style={{
-                      fontSize: '11px',
-                      color: '#059669',
-                      fontWeight: '600'
-                    }}>
+                    <span style={{ fontSize: '11px', color: '#059669', fontWeight: '600' }}>
                       | {formatGrade(edu.grade_type || 'percentage', edu.grade_value)}
                     </span>
                   )}
@@ -179,7 +158,6 @@ const PDFResumePreview = ({ resumeForm, currentUser }) => {
           ))}
         </div>
       )}
-
 
       {/* Skills */}
       {skillsSet.length > 0 && (
