@@ -40,6 +40,9 @@ function AppContent() {
 };
 
 
+
+
+
   const [resumeForm, setResumeForm] = useState({
     title: '',
     about_text: '',
@@ -48,6 +51,24 @@ function AppContent() {
     projects: [{ project_name: '', tech_stack: '', proj_desc: '', proj_link: '' }],
     certifications: [{ cert_name: '', issuer: '' }]
   });
+
+
+
+// Load theme preference
+useEffect(() => {
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme) {
+    setIsDarkMode(savedTheme === 'dark');
+  }
+}, []);
+
+
+
+
+
+
+
+
 
   // Backend running on port 5000
   const API_BASE = 'http://localhost:5000/api';
@@ -83,6 +104,34 @@ function AppContent() {
       return () => clearTimeout(timer);
     }
   }, [notification.show]);
+
+
+
+
+
+
+
+
+
+
+
+
+// Theme state
+const [isDarkMode, setIsDarkMode] = useState(true); // Default to dark mode
+
+// Theme toggle function
+const toggleTheme = () => {
+  setIsDarkMode(prev => !prev);
+  // Save preference to localStorage
+  localStorage.setItem('theme', !isDarkMode ? 'dark' : 'light');
+};
+
+
+
+
+
+
+
 
   // Helper function to format date for HTML input
   const formatDateForInput = (dateString) => {
@@ -355,8 +404,12 @@ function AppContent() {
           institution_name: edu.institution_name || '',
           degree: edu.degree || '',
           start_date_edu: formatDateForInput(edu.start_date_edu),
-          end_date_edu: formatDateForInput(edu.end_date_edu)
-        })) : [{ institution_name: '', degree: '', start_date_edu: '', end_date_edu: '' }],
+          end_date_edu: formatDateForInput(edu.end_date_edu),
+          grade_type: edu.grade_type || 'percentage', // Default to 'percentage' if null
+          grade_value: edu.grade_value || ''
+
+
+        })) : [{ institution_name: '', degree: '', start_date_edu: '', end_date_edu: '', grade_type: 'percentage', grade_value: ''  }],
         experience: resumeData.experience.length > 0 ? resumeData.experience.map(exp => ({
           job_title: exp.job_title || '',
           company_name: exp.company_name || '',

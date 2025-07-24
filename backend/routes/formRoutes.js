@@ -6,12 +6,10 @@ const db = require('../db/db');
 router.post('/about', (req, res) => {
   const { resume_id, about_text } = req.body;
   
-  // Only save if about_text is not empty
   if (!about_text || about_text.trim() === '') {
     return res.status(200).json({ message: 'About info skipped (empty)' });
   }
   
-  // Check if about info already exists
   db.query('SELECT * FROM ABOUT_INFO WHERE resume_id = ? AND is_deleted = FALSE', [resume_id], (err, results) => {
     if (err) {
       console.error('About query error:', err);
@@ -19,7 +17,6 @@ router.post('/about', (req, res) => {
     }
     
     if (results.length > 0) {
-      // Update existing record
       db.query('UPDATE ABOUT_INFO SET about_text = ? WHERE resume_id = ? AND is_deleted = FALSE', 
         [about_text, resume_id], (err) => {
           if (err) {
@@ -29,7 +26,6 @@ router.post('/about', (req, res) => {
           res.status(200).json({ message: 'About info updated' });
         });
     } else {
-      // Insert new record
       db.query('INSERT INTO ABOUT_INFO (resume_id, about_text) VALUES (?, ?)', 
         [resume_id, about_text], (err) => {
           if (err) {
@@ -42,45 +38,66 @@ router.post('/about', (req, res) => {
   });
 });
 
-// Education - Only save if at least one field is filled
+// --- CORRECTED EDUCATION ROUTE ---
+// Education - Corrected to save grade information
 router.post('/education', (req, res) => {
-  const { resume_id, institution_name, degree, start_date_edu, end_date_edu } = req.body;
-  
+  // Destructure all fields from the request body
+  const { resume_id, institution_name, degree, start_date_edu, end_date_edu, grade_type, grade_value } = req.body;
+
   // Only save if at least institution or degree is provided
   if ((!institution_name || institution_name.trim() === '') && 
       (!degree || degree.trim() === '')) {
     return res.status(200).json({ message: 'Education skipped (empty)' });
   }
   
-  // Convert empty strings to null for DATE fields
-  const startDate = start_date_edu && start_date_edu !== '' ? start_date_edu : null;
-  const endDate = end_date_edu && end_date_edu !== '' ? end_date_edu : null;
+  // Handle optional and null values correctly
+  const startDate = start_date_edu || null;
+  const endDate = end_date_edu || null;
+  const final_grade_type = grade_type || 'percentage'; // Default to 'percentage'
+  const final_grade_value = (grade_value && String(grade_value).trim() !== '') ? grade_value : null;
+
+  // Update SQL query with correct number of columns and placeholders
+  const sql = `
+    INSERT INTO EDUCATION 
+    (resume_id, institution_name, degree, start_date_edu, end_date_edu, grade_type, grade_value) 
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `;
   
-  db.query('INSERT INTO EDUCATION (resume_id, institution_name, degree, start_date_edu, end_date_edu) VALUES (?, ?, ?, ?, ?)',
-    [resume_id, institution_name || null, degree || null, startDate, endDate], (err) => {
-      if (err) {
-        console.error('Education insert error:', err);
-        return res.status(500).json({ error: err });
-      }
-      res.status(201).json({ message: 'Education saved' });
-    });
+  // Add missing grade fields to the values array
+  const values = [
+    resume_id, 
+    institution_name || null, 
+    degree || null, 
+    startDate, 
+    endDate,
+    final_grade_type,
+    final_grade_value
+  ];
+  
+  db.query(sql, values, (err, result) => {
+    if (err) {
+      console.error('Education insert error:', err);
+      return res.status(500).json({ error: 'Database error while saving education.' });
+    }
+    res.status(201).json({ message: 'Education saved successfully' });
+  });
 });
 
 // Experience - Only save if at least one field is filled
 router.post('/experience', (req, res) => {
-  const { resume_id, job_title, company_name, start_date_ex, end_date_ex } = req.body;
+  const { resume_id, job_title, company_name, start_date_ex, end_date_ex, ex_desc } = req.body;
   
-  // Only save if at least job title or company is provided
   if ((!job_title || job_title.trim() === '') && 
       (!company_name || company_name.trim() === '')) {
     return res.status(200).json({ message: 'Experience skipped (empty)' });
   }
   
-  // Convert empty strings to null for DATE fields
   const startDate = start_date_ex && start_date_ex !== '' ? start_date_ex : null;
   const endDate = end_date_ex && end_date_ex !== '' ? end_date_ex : null;
+
+
   
-  db.query('INSERT INTO EXPERIENCE (resume_id, job_title, company_name, start_date_ex, end_date_ex) VALUES (?, ?, ?, ?, ?)',
+  db.query('INSERT INTO EXPERIENCE (resume_id, job_title, company_name, start_date_ex, end_date_ex, ex_desc) VALUES (?, ?, ?, ?, ?, ?)',
     [resume_id, job_title || null, company_name || null, startDate, endDate], (err) => {
       if (err) {
         console.error('Experience insert error:', err);
@@ -94,7 +111,6 @@ router.post('/experience', (req, res) => {
 router.post('/projects', (req, res) => {
   const { resume_id, project_name, tech_stack, proj_desc, proj_link } = req.body;
   
-  // Only save if project name is provided
   if (!project_name || project_name.trim() === '') {
     return res.status(200).json({ message: 'Project skipped (empty)' });
   }
@@ -113,7 +129,6 @@ router.post('/projects', (req, res) => {
 router.post('/certifications', (req, res) => {
   const { resume_id, cert_name, issuer } = req.body;
   
-  // Only save if cert name is provided
   if (!cert_name || cert_name.trim() === '') {
     return res.status(200).json({ message: 'Certification skipped (empty)' });
   }
@@ -128,7 +143,7 @@ router.post('/certifications', (req, res) => {
     });
 });
 
-// Clear existing data routes
+// --- Clear existing data routes ---
 router.post('/clear-education', (req, res) => {
   const { resume_id } = req.body;
   db.query('UPDATE EDUCATION SET is_deleted = TRUE WHERE resume_id = ?', [resume_id], (err) => {

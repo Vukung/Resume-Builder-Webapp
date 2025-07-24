@@ -6,10 +6,12 @@ const ModernResumePreview = ({ resumeForm, currentUser }) => {
     if (!dateString) return '';
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return '';
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short' 
-    });
+    
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    
+    return `${day}/${month}/${year}`;
   };
 
   const formatDateRange = (startDate, endDate) => {
@@ -18,6 +20,19 @@ const ModernResumePreview = ({ resumeForm, currentUser }) => {
     if (!start && !end) return '';
     if (!start) return end;
     return `${start} - ${end}`;
+  };
+
+  // Format grade display based on type
+  const formatGrade = (gradeType, gradeValue) => {
+    if (!gradeValue || gradeValue === '') return '';
+    
+    if (gradeType === 'cgpa') {
+      return `CGPA ${gradeValue}/10`;
+    } else {
+      return `${gradeValue}%`;
+
+      
+    }
   };
 
   // Extract unique skills from projects
@@ -166,11 +181,11 @@ const ModernResumePreview = ({ resumeForm, currentUser }) => {
                             <p className="text-lg text-purple-600 font-semibold">{exp.company_name}</p>
                           </div>
                         </div>
-                        {(exp.start_date_ex || exp.end_date_ex) && (
+                        {exp.end_date_ex && (
                           <div className="bg-gray-100 px-4 py-2 rounded-full">
                             <div className="text-sm text-gray-600 flex items-center font-medium">
                               <Calendar className="w-4 h-4 mr-2" />
-                              {formatDateRange(exp.start_date_ex, exp.end_date_ex)}
+                              {formatDate(exp.end_date_ex)}
                             </div>
                           </div>
                         )}
@@ -182,7 +197,7 @@ const ModernResumePreview = ({ resumeForm, currentUser }) => {
             </div>
           )}
 
-          {/* Education */}
+          {/* Education with Grade Support */}
           {resumeForm.education.some(edu => edu.institution_name || edu.degree) && (
             <div className="mb-10">
               <div className="flex items-center mb-6">
@@ -193,19 +208,29 @@ const ModernResumePreview = ({ resumeForm, currentUser }) => {
                 {resumeForm.education.map((edu, index) => (
                   (edu.institution_name || edu.degree) && (
                     <div key={index} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow border-l-4 border-green-500">
-                      <div className="flex justify-between items-start">
+                      <div className="flex justify-between items-start mb-3">
                         <div className="flex-1">
                           <h3 className="text-lg font-bold text-gray-900 mb-1">{edu.degree}</h3>
-                          <div className="flex items-center">
+                          <div className="flex items-center mb-2">
                             <GraduationCap className="w-4 h-4 mr-2 text-green-600" />
                             <p className="text-green-600 font-semibold">{edu.institution_name}</p>
                           </div>
+                          
+                          {/* Grade Display */}
+                          {edu.grade_value && (
+                            <div className="flex items-center mt-2">
+                              <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                                {formatGrade(edu.grade_type || 'percentage', edu.grade_value)}
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        {(edu.start_date_edu || edu.end_date_edu) && (
+                        
+                        {edu.end_date_edu && (
                           <div className="bg-gray-100 px-4 py-2 rounded-full">
                             <div className="text-sm text-gray-600 flex items-center font-medium">
                               <Calendar className="w-4 h-4 mr-2" />
-                              {formatDateRange(edu.start_date_edu, edu.end_date_edu)}
+                              {formatDate(edu.end_date_edu)}
                             </div>
                           </div>
                         )}

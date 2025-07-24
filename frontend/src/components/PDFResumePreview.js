@@ -1,15 +1,44 @@
-import React from 'react';
 
 const PDFResumePreview = ({ resumeForm, currentUser }) => {
-  const formatDate = (dateString) => {
+  // const formatDate = (dateString) => {
+  //   if (!dateString) return '';
+  //   const date = new Date(dateString);
+  //   if (isNaN(date.getTime())) return '';
+
+  //   const day = String(date.getDate()).padStart(2, '0');
+  //   const month = String(date.getMonth() + 1).padStart(2, '0');
+  //   const year = date.getFullYear();
+
+  //   return `${day}/${month}/${year}`;
+  // };
+
+
+
+
+
+  const formatMonthYear = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return '';
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short' 
-    });
+    return date.toLocaleString('en-US', { month: 'short', year: 'numeric' });
   };
+
+  const formatExperienceRange = (start, end) => {
+    if (!start && !end) return '';
+    if (!start) return formatMonthYear(end);
+    if (!end) return formatMonthYear(start);
+    return `${formatMonthYear(start)} - ${formatMonthYear(end)}`;
+  };
+
+
+
+
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    return dateString.slice(0, 4);
+  };
+
 
   const formatDateRange = (startDate, endDate) => {
     const start = formatDate(startDate);
@@ -19,17 +48,28 @@ const PDFResumePreview = ({ resumeForm, currentUser }) => {
     return `${start} - ${end}`;
   };
 
+  // Format grade display based on type
+  const formatGrade = (gradeType, gradeValue) => {
+    if (!gradeValue || gradeValue === '') return '';
+
+    if (gradeType === 'cgpa') {
+      return `CGPA ${gradeValue}/10`;
+    } else {
+      return `${gradeValue}%`;
+    }
+  };
+
   const uniqueSkills = resumeForm.projects
     .filter(proj => proj.tech_stack)
     .flatMap(proj => proj.tech_stack.split(',').map(tech => tech.trim()))
     .filter(skill => skill.length > 0);
-  
+
   const skillsSet = [...new Set(uniqueSkills)];
 
   return (
-    <div 
-      className="bg-white text-black w-full mx-auto" 
-      style={{ 
+    <div
+      className="bg-white text-black w-full mx-auto"
+      style={{
         fontFamily: 'Arial, sans-serif',
         fontSize: '12px',
         lineHeight: '1.4',
@@ -66,7 +106,7 @@ const PDFResumePreview = ({ resumeForm, currentUser }) => {
         </div>
       )}
 
-      {/* Experience */}
+      {/* Experience - Updated to show only end date */}
       {resumeForm.experience.some(exp => exp.job_title || exp.company_name) && (
         <div style={{ marginBottom: '25px' }}>
           <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#1a1a1a', marginBottom: '10px', borderBottom: '1px solid #ccc', paddingBottom: '5px' }}>
@@ -86,7 +126,51 @@ const PDFResumePreview = ({ resumeForm, currentUser }) => {
                   </div>
                   {(exp.start_date_ex || exp.end_date_ex) && (
                     <span style={{ fontSize: '10px', color: '#666', backgroundColor: '#f5f5f5', padding: '4px 8px', borderRadius: '4px' }}>
-                      {formatDateRange(exp.start_date_ex, exp.end_date_ex)}
+                      {formatExperienceRange(exp.start_date_ex, exp.end_date_ex)}
+                    </span>
+                  )}
+
+                </div>
+              </div>
+            )
+          ))}
+        </div>
+      )}
+
+      {/* Education - Updated with Grade Support */}
+      {/* Education - Updated with Better 2-line Formatting */}
+      {resumeForm.education.some(edu => edu.institution_name || edu.degree) && (
+        <div style={{ marginBottom: '25px' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#1a1a1a', marginBottom: '10px', borderBottom: '1px solid #ccc', paddingBottom: '5px' }}>
+            EDUCATION
+          </h2>
+          {resumeForm.education.map((edu, index) => (
+            (edu.institution_name || edu.degree) && (
+              <div key={index} style={{ marginBottom: '15px' }}>
+                {/* Line 1: Institution Name and Year */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
+                  <h3 style={{ fontSize: '13px', fontWeight: 'bold', margin: '0', color: '#1a1a1a' }}>
+                    {edu.institution_name}
+                  </h3>
+                  {edu.end_date_edu && (
+                    <span style={{ fontSize: '11px', color: '#666', fontWeight: '600' }}>
+                      {formatDate(edu.end_date_edu)}
+                    </span>
+                  )}
+                </div>
+
+                {/* Line 2: Degree, Grade (if exists) */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <p style={{ fontSize: '12px', color: '#0066cc', margin: '0', fontWeight: '600' }}>
+                    {edu.degree}
+                  </p>
+                  {edu.grade_value && (
+                    <span style={{
+                      fontSize: '11px',
+                      color: '#059669',
+                      fontWeight: '600'
+                    }}>
+                      | {formatGrade(edu.grade_type || 'percentage', edu.grade_value)}
                     </span>
                   )}
                 </div>
@@ -96,35 +180,6 @@ const PDFResumePreview = ({ resumeForm, currentUser }) => {
         </div>
       )}
 
-      {/* Education */}
-      {resumeForm.education.some(edu => edu.institution_name || edu.degree) && (
-        <div style={{ marginBottom: '25px' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#1a1a1a', marginBottom: '10px', borderBottom: '1px solid #ccc', paddingBottom: '5px' }}>
-            EDUCATION
-          </h2>
-          {resumeForm.education.map((edu, index) => (
-            (edu.institution_name || edu.degree) && (
-              <div key={index} style={{ marginBottom: '10px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
-                    <h3 style={{ fontSize: '13px', fontWeight: 'bold', margin: '0', color: '#1a1a1a' }}>
-                      {edu.degree}
-                    </h3>
-                    <p style={{ fontSize: '11px', color: '#0066cc', margin: '2px 0', fontWeight: '600' }}>
-                      {edu.institution_name}
-                    </p>
-                  </div>
-                  {(edu.start_date_edu || edu.end_date_edu) && (
-                    <span style={{ fontSize: '10px', color: '#666', backgroundColor: '#f5f5f5', padding: '4px 8px', borderRadius: '4px' }}>
-                      {formatDateRange(edu.start_date_edu, edu.end_date_edu)}
-                    </span>
-                  )}
-                </div>
-              </div>
-            )
-          ))}
-        </div>
-      )}
 
       {/* Skills */}
       {skillsSet.length > 0 && (
@@ -134,13 +189,13 @@ const PDFResumePreview = ({ resumeForm, currentUser }) => {
           </h2>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
             {skillsSet.map((skill, index) => (
-              <span 
+              <span
                 key={index}
-                style={{ 
-                  backgroundColor: '#f0f0f0', 
-                  color: '#333', 
-                  padding: '4px 8px', 
-                  borderRadius: '12px', 
+                style={{
+                  backgroundColor: '#f0f0f0',
+                  color: '#333',
+                  padding: '4px 8px',
+                  borderRadius: '12px',
                   fontSize: '10px',
                   fontWeight: '500'
                 }}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { FileText, Plus, Search, Eye, Copy, Trash2, ChevronRight, Moon, Sun, LogOut, Settings } from 'lucide-react';
 
-const Header = ({ currentUser, darkMode, onToggleDarkMode, onLogout, onProfile }) => (
+const Header = ({ currentUser, isDarkMode, onToggleTheme, onLogout, onProfile }) => (
   <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
     <div className="flex items-center justify-between">
       <div className="flex items-center space-x-4">
@@ -12,21 +12,24 @@ const Header = ({ currentUser, darkMode, onToggleDarkMode, onLogout, onProfile }
       </div>
       
       <div className="flex items-center space-x-4">
-        // <button
-        //   onClick={onToggleDarkMode}
-        //   className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
-        // >
-        //   {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-        // </button>
+        {/* <button
+          onClick={onToggleTheme}
+          className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+          title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+        >
+          {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+        </button> */}
         <button
           onClick={onProfile}
           className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+          title="Profile Settings"
         >
           <Settings className="w-5 h-5" />
         </button>
         <button
           onClick={onLogout}
           className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+          title="Logout"
         >
           <LogOut className="w-5 h-5" />
         </button>
@@ -45,18 +48,21 @@ const ResumeCard = ({ resume, onEdit, onDuplicate, onDelete }) => (
         <button
           onClick={() => onEdit(resume)}
           className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+          title="Edit Resume"
         >
           <Eye className="w-4 h-4" />
         </button>
         <button
           onClick={() => onDuplicate(resume.resume_id)}
           className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+          title="Duplicate Resume"
         >
           <Copy className="w-4 h-4" />
         </button>
         <button
           onClick={() => onDelete(resume.resume_id)}
           className="p-2 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded-lg transition-colors"
+          title="Delete Resume"
         >
           <Trash2 className="w-4 h-4" />
         </button>
@@ -85,8 +91,8 @@ const Dashboard = ({
   onEditResume, 
   onDuplicateResume, 
   onDeleteResume, 
-  darkMode, 
-  onToggleDarkMode, 
+  isDarkMode, 
+  onToggleTheme, 
   onLogout, 
   onProfile 
 }) => {
@@ -98,8 +104,8 @@ const Dashboard = ({
     <div className="min-h-screen bg-gray-900">
       <Header 
         currentUser={currentUser}
-        darkMode={darkMode}
-        onToggleDarkMode={onToggleDarkMode}
+        isDarkMode={isDarkMode}
+        onToggleTheme={onToggleTheme}
         onLogout={onLogout}
         onProfile={onProfile}
       />
