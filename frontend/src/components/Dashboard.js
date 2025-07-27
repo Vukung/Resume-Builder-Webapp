@@ -153,7 +153,7 @@ const Dashboard = ({
             <FileText className="w-16 h-16 text-gray-600 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-400 mb-2">No resumes found</h3>
             <p className="text-gray-500 mb-6">Create your first resume to get started</p>
-            <button``
+            <button
               onClick={onCreateResume}
               className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-200 flex items-center space-x-2 mx-auto"
             >
