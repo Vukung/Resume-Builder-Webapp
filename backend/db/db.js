@@ -9,7 +9,7 @@ const pool = new Pool({
   ...( !process.env.DATABASE_URL && {
     host: 'localhost',
     user: 'postgres',
-    password: 'root', // Your local PostgreSQL password
+    password: 'root', // local PostgreSQL password
     database: 'resume_builder_database',
     port: 5432,
   }),
