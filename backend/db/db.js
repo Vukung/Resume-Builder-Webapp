@@ -1,18 +1,28 @@
 const mysql = require('mysql2');
 
-const db = mysql.createConnection({
-  host: "localhost",
-  user: "root", 
-  password: "root",
-  database: "resume_builder_database"  // Changed from resume_builder_db
+// This configuration to use Render's environment variables when available,
+// otherwise
+// it will fall back to local development database settings
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || 'root',
+  database: process.env.DB_DATABASE || 'resume_builder_database',
+  port: process.env.DB_PORT || 3306, // Default MySQL port
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
-db.connect((err) => {
-  if (err) {
-    console.error("Database connection failed:", err.message);
-  } else {
-    console.log("Connected to MySQL database.");
-  }
+// Test the connection on startup
+pool.getConnection((err, connection) => {
+    if (err) {
+        console.error('Database connection failed:', err);
+        return;
+    }
+    console.log('Database connected successfully!');
+    connection.release(); // Release the connection
 });
 
-module.exports = db;
+// Export the pool for use in other files
+module.exports = pool;
