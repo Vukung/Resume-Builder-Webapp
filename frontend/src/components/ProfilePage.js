@@ -46,11 +46,11 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser, onShowNotification }) 
     }
   };
 
-  // UPDATED: Add JWT token to refreshUserData function
+  // UPDATED: Changed localhost to live backend URL
   const refreshUserData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/profile/${currentUser.user_id}`, {
+      const response = await fetch(`https://resume-rocket-backend.onrender.com/api/profile/${currentUser.user_id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -68,7 +68,7 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser, onShowNotification }) 
     }
   };
 
-  // UPDATED: Add JWT token to uploadProfilePicture function
+  // UPDATED: Changed localhost to live backend URL
   const uploadProfilePicture = async () => {
     if (!selectedFile) return;
     
@@ -80,7 +80,7 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser, onShowNotification }) 
     const token = localStorage.getItem('token');
 
     try {
-      const response = await fetch(`http://localhost:5000/api/profile/${currentUser.user_id}/upload`, {
+      const response = await fetch(`https://resume-rocket-backend.onrender.com/api/profile/${currentUser.user_id}/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -131,13 +131,13 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser, onShowNotification }) 
     });
   };
 
-  // Save profile changes with JWT authentication
+  // UPDATED: Changed localhost to live backend URL
   const handleSaveProfile = async () => {
     setSaving(true);
     
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/profile/${currentUser.user_id}`, {
+      const response = await fetch(`https://resume-rocket-backend.onrender.com/api/profile/${currentUser.user_id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -208,29 +208,16 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser, onShowNotification }) 
             <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
               <div className="flex items-center space-x-6 mb-6">
                 <div className="relative">
-                  {currentUser?.profile_pic ? (
-                    <img 
-                      src={`http://localhost:5000${currentUser.profile_pic}`} 
-                      alt="Profile" 
-                      className="w-20 h-20 rounded-full object-cover border-2 border-gray-600" 
-                    />
-                  ) : (
-                    <div className="bg-gradient-to-r from-blue-500 to-purple-600 w-20 h-20 rounded-full flex items-center justify-center">
-                      <User className="w-10 h-10 text-white" />
-                    </div>
-                  )}
+                  {/* UPDATED: Removed profile picture display since feature was removed */}
+                  <div className="bg-gradient-to-r from-blue-500 to-purple-600 w-20 h-20 rounded-full flex items-center justify-center">
+                    <User className="w-10 h-10 text-white" />
+                  </div>
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-white">{currentUser?.name}</h2>
                   <p className="text-gray-400">{currentUser?.email}</p>
                 </div>
-                {/* <button 
-                  onClick={() => setShowUploadModal(true)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-                >
-                  <Upload className="w-4 h-4" />
-                  <span>Upload Photo</span>
-                </button> */}
+                {/* Upload button removed since profile picture feature was removed */}
               </div>
 
               {/* Make form fields editable */}
@@ -310,123 +297,7 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser, onShowNotification }) 
         </div>
       </div>
 
-      {/* Upload Modal */}
-      {showUploadModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-xl shadow-2xl w-full max-w-md border border-gray-700">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-700">
-              <div className="flex items-center space-x-3">
-                <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-2 rounded-lg">
-                  <Camera className="w-5 h-5 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold text-white">Upload Profile Picture</h3>
-              </div>
-              <button
-                onClick={closeUploadModal}
-                className="text-gray-400 hover:text-white transition-colors p-1"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Modal Content */}
-            <div className="p-6">
-              {/* Current/Preview Image */}
-              <div className="flex justify-center mb-6">
-                <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center">
-                  {previewUrl ? (
-                    <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
-                  ) : currentUser?.profile_pic ? (
-                    <img 
-                      src={`http://localhost:5000${currentUser.profile_pic}`} 
-                      alt="Current" 
-                      className="w-full h-full object-cover" 
-                    />
-                  ) : (
-                    <User className="w-16 h-16 text-gray-400" />
-                  )}
-                </div>
-              </div>
-
-              {/* File Input */}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileSelect}
-                className="hidden"
-                id="profile-upload-modal"
-              />
-
-              {!selectedFile ? (
-                // Initial state - show file picker
-                <div className="space-y-4">
-                  <label
-                    htmlFor="profile-upload-modal"
-                    className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 cursor-pointer transition-colors flex items-center justify-center space-x-2"
-                  >
-                    <Upload className="w-5 h-5" />
-                    <span>Choose Image</span>
-                  </label>
-                  
-                  <p className="text-sm text-gray-400 text-center">
-                    Supported formats: JPG, PNG, GIF<br/>
-                    Max size: 5MB
-                  </p>
-                </div>
-              ) : (
-                // File selected - show upload controls
-                <div className="space-y-4">
-                  <div className="bg-gray-700 p-3 rounded-lg">
-                    <p className="text-white text-sm font-medium">{selectedFile.name}</p>
-                    <p className="text-gray-400 text-xs">
-                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                  </div>
-                  
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={uploadProfilePicture}
-                      disabled={uploading}
-                      className="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
-                    >
-                      {uploading ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          <span>Uploading...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Check className="w-4 h-4" />
-                          <span>Upload</span>
-                        </>
-                      )}
-                    </button>
-                    
-                    <button
-                      onClick={() => {
-                        setSelectedFile(null);
-                        setPreviewUrl(null);
-                      }}
-                      className="px-4 py-3 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                  
-                  <label
-                    htmlFor="profile-upload-modal"
-                    className="w-full bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 cursor-pointer transition-colors flex items-center justify-center space-x-2 text-sm"
-                  >
-                    <Upload className="w-4 h-4" />
-                    <span>Choose Different Image</span>
-                  </label>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Upload Modal - Removed since profile picture feature was removed */}
     </>
   );
 };

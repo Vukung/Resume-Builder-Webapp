@@ -42,7 +42,7 @@ function AppContent() {
 
   const showNotification = (message, type) => { 
     setNotification({
-      show: true, // Fixed: was isVisible, should be show
+      show: true,
       message,
       type
     });
@@ -57,8 +57,8 @@ function AppContent() {
     certifications: [{ cert_name: '', issuer: '' }]
   });
 
-  // Backend running on port 5000
-  const API_BASE = 'http://localhost:5000/api';
+  // --- THIS IS THE ONLY CHANGE ---
+  const API_BASE = 'https://resume-rocket-backend.onrender.com/api';
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
@@ -97,15 +97,15 @@ function AppContent() {
         localStorage.removeItem('user');
       }
     }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-hide notification after 5 seconds
   useEffect(() => {
     if (notification.show) {
-      // const timer = setTimeout(() => {
+      const timer = setTimeout(() => {
         setNotification({ show: false, message: '', type: 'success' });
-      // }, 5000);
-      // return () => clearTimeout(timer);
+      }, 5000);
+      return () => clearTimeout(timer);
     }
   }, [notification.show]);
 
@@ -117,52 +117,29 @@ function AppContent() {
     return date.toISOString().split('T')[0];
   };
 
-  // FIXED: Complete handleLogout function
   const handleLogout = async () => {
     console.log('Logging out user');
-
-    // Start transition FIRST (before any navigation)
     transitionToPage(async () => {
-      // Call logout API during transition
       await apiCall('/auth/logout', { method: 'POST' });
-
-      // Clear localStorage
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-
-      // Reset all state
       setCurrentUser(null);
       setResumes([]);
       setSelectedResume(null);
       setSearchQuery('');
       setResumeForm({
-        title: '',
-        about_text: '',
-        education: [{ institution_name: '', degree: '', start_date_edu: '', end_date_edu: '' }],
-        experience: [{ job_title: '', company_name: '', start_date_ex: '', end_date_ex: '' }],
-        projects: [{ project_name: '', tech_stack: '', proj_desc: '', proj_link: '' }],
-        certifications: [{ cert_name: '', issuer: '' }]
+        title: '', about_text: '', education: [{ institution_name: '', degree: '', start_date_edu: '', end_date_edu: '' }], experience: [{ job_title: '', company_name: '', start_date_ex: '', end_date_ex: '' }], projects: [{ project_name: '', tech_stack: '', proj_desc: '', proj_link: '' }], certifications: [{ cert_name: '', issuer: '' }]
       });
-
-      // Navigate LAST (after transition starts)
       navigate('/login');
-      
-      // Show notification after navigation
       setTimeout(() => {
-        setNotification({
-          show: true,
-          message: 'Logged out successfully!',
-          type: 'success'
-        });
+        setNotification({ show: true, message: 'Logged out successfully!', type: 'success' });
       }, 100);
     }, 400);
   };
 
-  // UPDATED: apiCall with JWT token authentication
   const apiCall = async (endpoint, options = {}) => {
     try {
       const token = localStorage.getItem('token');
-      
       console.log('Making API call to:', `${API_BASE}${endpoint}`);
       const response = await fetch(`${API_BASE}${endpoint}`, {
         headers: { 
@@ -172,17 +149,14 @@ function AppContent() {
         },
         ...options
       });
-
       if (response.status === 401 || response.status === 403) {
         console.log('Authentication failed, logging out user');
         handleLogout();
         return { error: 'Authentication failed' };
       }
-
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
       const data = await response.json();
       console.log('API response:', data);
       return data;
@@ -192,119 +166,64 @@ function AppContent() {
     }
   };
 
-  // Update current user function for profile updates
   const updateCurrentUser = (updatedUserData) => {
-    setCurrentUser(prev => ({
-      ...prev,
-      ...updatedUserData
-    }));
-    localStorage.setItem('user', JSON.stringify({
-      ...currentUser,
-      ...updatedUserData
-    }));
+    const newUserData = { ...currentUser, ...updatedUserData };
+    setCurrentUser(newUserData);
+    localStorage.setItem('user', JSON.stringify(newUserData));
   };
 
-  // Navigation helpers with transitions
   const navigateWithTransition = (path) => {
     transitionToPage(() => {
       navigate(path);
     }, 400);
   };
 
-  // SINGLE handleLogin function
   const handleLogin = async (loginForm) => {
     setIsLoading(true);
     console.log('Attempting login with:', loginForm);
-
     try {
       const result = await apiCall('/auth/login', {
         method: 'POST',
         body: JSON.stringify(loginForm)
       });
-
       if (result.user && result.token) {
         localStorage.setItem('token', result.token);
         localStorage.setItem('user', JSON.stringify(result.user));
-        
-        // setCurrentUser(result.user);
-        // loadResumes(result.user.user_id);
-
-        // setNotification({
-        //   show: true,
-        //   message: `Welcome back, ${result.user.name || 'User'}!`,
-        //   type: 'success'
-        // });
-
-        // Use transition BEFORE navigation
         transitionToPage(() => {
-          // Set user state DURING the black transition
-        setCurrentUser(result.user);
-        loadResumes(result.user.user_id);
-        // Navigate to dashboard
+          setCurrentUser(result.user);
+          loadResumes(result.user.user_id);
           navigate('/dashboard');
         }, 400);
-
-
-        setNotification({
-          show: true,
-          message: `Welcome back, ${result.user.name || 'User'}!`,
-          type: 'success'
-        });
-
+        setNotification({ show: true, message: `Welcome back, ${result.user.name || 'User'}!`, type: 'success' });
       } else {
-        setNotification({
-          show: true,
-          message: 'Invalid email or password',
-          type: 'error'
-        });
+        setNotification({ show: true, message: 'Invalid email or password', type: 'error' });
       }
     } catch (error) {
       console.error('Login error:', error);
-      setNotification({
-        show: true,
-        message: 'Connection error. Please check your internet and try again.',
-        type: 'error'
-      });
+      setNotification({ show: true, message: 'Connection error. Please check your internet and try again.', type: 'error' });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // SINGLE handleSignup function
   const handleSignup = async (signupForm) => {
     setIsLoading(true);
     console.log('Attempting signup with:', signupForm);
-
     try {
       const result = await apiCall('/auth/signup', {
         method: 'POST',
         body: JSON.stringify(signupForm)
       });
-
       if (result.userId) {
-        setNotification({
-          show: true,
-          message: 'Account created successfully! Please login.',
-          type: 'success'
-        });
-        
-        // Use transition BEFORE navigation
+        setNotification({ show: true, message: 'Account created successfully! Please login.', type: 'success' });
         transitionToPage(() => {
           navigate('/login');
         }, 400);
       } else {
-        setNotification({
-          show: true,
-          message: result.message || result.error || 'Signup failed',
-          type: 'error'
-        });
+        setNotification({ show: true, message: result.message || result.error || 'Signup failed', type: 'error' });
       }
     } catch (error) {
-      setNotification({
-        show: true,
-        message: 'Connection error. Please try again.',
-        type: 'error'
-      });
+      setNotification({ show: true, message: 'Connection error. Please try again.', type: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -313,7 +232,6 @@ function AppContent() {
   const loadResumes = async (userId) => {
     console.log('Loading resumes for user:', userId);
     const result = await apiCall(`/resume/${userId}`);
-
     if (Array.isArray(result)) {
       setResumes(result);
     } else if (result.error) {
@@ -325,7 +243,6 @@ function AppContent() {
   const loadResumeData = async (resumeId) => {
     console.log('Loading resume data for:', resumeId);
     const result = await apiCall(`/resume/data/${resumeId}`);
-
     if (result.error) {
       console.error('Failed to load resume data:', result.error);
       return null;
@@ -335,49 +252,27 @@ function AppContent() {
 
   const createNewResume = async (title) => {
     console.log('Creating new resume with title:', title);
-
     const result = await apiCall('/resume/create', {
       method: 'POST',
       body: JSON.stringify({ user_id: currentUser.user_id, title })
     });
-
     if (result.resumeId) {
-      setNotification({
-        show: true,
-        message: 'Resume created successfully!',
-        type: 'success'
-      });
+      setNotification({ show: true, message: 'Resume created successfully!', type: 'success' });
       loadResumes(currentUser.user_id);
       setShowCreateModal(false);
     } else {
-      setNotification({
-        show: true,
-        message: result.message || result.error || 'Failed to create resume',
-        type: 'error'
-      });
+      setNotification({ show: true, message: result.message || result.error || 'Failed to create resume', type: 'error' });
     }
   };
 
   const duplicateResume = async (resumeId) => {
     console.log('Duplicating resume:', resumeId);
-
-    const result = await apiCall(`/resume/duplicate/${resumeId}`, {
-      method: 'POST'
-    });
-
+    const result = await apiCall(`/resume/duplicate/${resumeId}`, { method: 'POST' });
     if (result.newId) {
-      setNotification({
-        show: true,
-        message: 'Resume duplicated successfully!',
-        type: 'success'
-      });
+      setNotification({ show: true, message: 'Resume duplicated successfully!', type: 'success' });
       loadResumes(currentUser.user_id);
     } else {
-      setNotification({
-        show: true,
-        message: result.message || result.error || 'Failed to duplicate resume',
-        type: 'error'
-      });
+      setNotification({ show: true, message: result.message || result.error || 'Failed to duplicate resume', type: 'error' });
     }
   };
 
@@ -385,74 +280,31 @@ function AppContent() {
     if (!window.confirm('Are you sure you want to delete this resume?')) {
       return;
     }
-
-    const result = await apiCall(`/resume/delete/${resumeId}`, {
-      method: 'POST'
-    });
-
+    const result = await apiCall(`/resume/delete/${resumeId}`, { method: 'POST' });
     if (result.message) {
-      setNotification({
-        show: true,
-        message: 'Resume deleted successfully!',
-        type: 'success'
-      });
+      setNotification({ show: true, message: 'Resume deleted successfully!', type: 'success' });
       loadResumes(currentUser.user_id);
     } else {
-      setNotification({
-        show: true,
-        message: result.error || 'Failed to delete resume',
-        type: 'error'
-      });
+      setNotification({ show: true, message: result.error || 'Failed to delete resume', type: 'error' });
     }
   };
 
   const handleEditResume = async (resume) => {
     console.log('Editing resume:', resume);
     setSelectedResume(resume);
-
     const resumeData = await loadResumeData(resume.resume_id);
-
     if (resumeData) {
       setResumeForm({
         title: resumeData.title || '',
         about_text: resumeData.about?.about_text || '',
-        education: resumeData.education.length > 0 ? resumeData.education.map(edu => ({
-          institution_name: edu.institution_name || '',
-          degree: edu.degree || '',
-          start_date_edu: formatDateForInput(edu.start_date_edu),
-          end_date_edu: formatDateForInput(edu.end_date_edu),
-          grade_type: edu.grade_type || 'percentage',
-          grade_value: edu.grade_value || ''
-        })) : [{ institution_name: '', degree: '', start_date_edu: '', end_date_edu: '', grade_type: 'percentage', grade_value: '' }],
-        experience: resumeData.experience.length > 0 ? resumeData.experience.map(exp => ({
-          job_title: exp.job_title || '',
-          company_name: exp.company_name || '',
-          start_date_ex: formatDateForInput(exp.start_date_ex),
-          end_date_ex: formatDateForInput(exp.end_date_ex)
-        })) : [{ job_title: '', company_name: '', start_date_ex: '', end_date_ex: '' }],
-        projects: resumeData.projects.length > 0 ? resumeData.projects.map(proj => ({
-          project_name: proj.project_name || '',
-          tech_stack: proj.tech_stack || '',
-          proj_desc: proj.proj_desc || '',
-          proj_link: proj.proj_link || ''
-        })) : [{ project_name: '', tech_stack: '', proj_desc: '', proj_link: '' }],
-        certifications: resumeData.certifications.length > 0 ? resumeData.certifications.map(cert => ({
-          cert_name: cert.cert_name || '',
-          issuer: cert.issuer || ''
-        })) : [{ cert_name: '', issuer: '' }]
+        education: resumeData.education.length > 0 ? resumeData.education.map(edu => ({ ...edu, start_date_edu: formatDateForInput(edu.start_date_edu), end_date_edu: formatDateForInput(edu.end_date_edu) })) : [{ institution_name: '', degree: '', start_date_edu: '', end_date_edu: '', grade_type: 'percentage', grade_value: '' }],
+        experience: resumeData.experience.length > 0 ? resumeData.experience.map(exp => ({ ...exp, start_date_ex: formatDateForInput(exp.start_date_ex), end_date_ex: formatDateForInput(exp.end_date_ex) })) : [{ job_title: '', company_name: '', start_date_ex: '', end_date_ex: '' }],
+        projects: resumeData.projects.length > 0 ? resumeData.projects : [{ project_name: '', tech_stack: '', proj_desc: '', proj_link: '' }],
+        certifications: resumeData.certifications.length > 0 ? resumeData.certifications : [{ cert_name: '', issuer: '' }]
       });
     } else {
-      setResumeForm({
-        title: resume.title || '',
-        about_text: '',
-        education: [{ institution_name: '', degree: '', start_date_edu: '', end_date_edu: '' }],
-        experience: [{ job_title: '', company_name: '', start_date_ex: '', end_date_ex: '' }],
-        projects: [{ project_name: '', tech_stack: '', proj_desc: '', proj_link: '' }],
-        certifications: [{ cert_name: '', issuer: '' }]
-      });
+      setResumeForm({ title: resume.title || '', about_text: '', education: [{ institution_name: '', degree: '', start_date_edu: '', end_date_edu: '' }], experience: [{ job_title: '', company_name: '', start_date_ex: '', end_date_ex: '' }], projects: [{ project_name: '', tech_stack: '', proj_desc: '', proj_link: '' }], certifications: [{ cert_name: '', issuer: '' }] });
     }
-
-    // Use transition for navigation to editor
     transitionToPage(() => {
       navigate(`/resume/${resume.resume_id}/edit`);
     });
@@ -460,270 +312,69 @@ function AppContent() {
 
   const saveResumeData = async () => {
     if (!selectedResume) {
-      setNotification({
-        show: true,
-        message: 'No resume selected',
-        type: 'error'
-      });
+      setNotification({ show: true, message: 'No resume selected', type: 'error' });
       return;
     }
-
     try {
-      // Clear existing data first
-      await apiCall('/form/clear-education', {
-        method: 'POST',
-        body: JSON.stringify({ resume_id: selectedResume.resume_id })
-      });
-
-      await apiCall('/form/clear-experience', {
-        method: 'POST',
-        body: JSON.stringify({ resume_id: selectedResume.resume_id })
-      });
-
-      await apiCall('/form/clear-projects', {
-        method: 'POST',
-        body: JSON.stringify({ resume_id: selectedResume.resume_id })
-      });
-
-      await apiCall('/form/clear-certifications', {
-        method: 'POST',
-        body: JSON.stringify({ resume_id: selectedResume.resume_id })
-      });
-
-      // Save about info
+      await apiCall('/form/clear-education', { method: 'POST', body: JSON.stringify({ resume_id: selectedResume.resume_id }) });
+      await apiCall('/form/clear-experience', { method: 'POST', body: JSON.stringify({ resume_id: selectedResume.resume_id }) });
+      await apiCall('/form/clear-projects', { method: 'POST', body: JSON.stringify({ resume_id: selectedResume.resume_id }) });
+      await apiCall('/form/clear-certifications', { method: 'POST', body: JSON.stringify({ resume_id: selectedResume.resume_id }) });
       if (resumeForm.about_text && resumeForm.about_text.trim() !== '') {
-        await apiCall('/form/about', {
-          method: 'POST',
-          body: JSON.stringify({
-            resume_id: selectedResume.resume_id,
-            about_text: resumeForm.about_text
-          })
-        });
+        await apiCall('/form/about', { method: 'POST', body: JSON.stringify({ resume_id: selectedResume.resume_id, about_text: resumeForm.about_text }) });
       }
-
-      // Save education entries
       for (const edu of resumeForm.education) {
-        if ((edu.institution_name && edu.institution_name.trim() !== '') ||
-          (edu.degree && edu.degree.trim() !== '')) {
-          await apiCall('/form/education', {
-            method: 'POST',
-            body: JSON.stringify({
-              resume_id: selectedResume.resume_id,
-              ...edu
-            })
-          });
+        if ((edu.institution_name && edu.institution_name.trim() !== '') || (edu.degree && edu.degree.trim() !== '')) {
+          await apiCall('/form/education', { method: 'POST', body: JSON.stringify({ resume_id: selectedResume.resume_id, ...edu }) });
         }
       }
-
-      // Save experience entries
       for (const exp of resumeForm.experience) {
-        if ((exp.job_title && exp.job_title.trim() !== '') ||
-          (exp.company_name && exp.company_name.trim() !== '')) {
-          await apiCall('/form/experience', {
-            method: 'POST',
-            body: JSON.stringify({
-              resume_id: selectedResume.resume_id,
-              ...exp
-            })
-          });
+        if ((exp.job_title && exp.job_title.trim() !== '') || (exp.company_name && exp.company_name.trim() !== '')) {
+          await apiCall('/form/experience', { method: 'POST', body: JSON.stringify({ resume_id: selectedResume.resume_id, ...exp }) });
         }
       }
-
-      // Save project entries
       for (const proj of resumeForm.projects) {
         if (proj.project_name && proj.project_name.trim() !== '') {
-          await apiCall('/form/projects', {
-            method: 'POST',
-            body: JSON.stringify({
-              resume_id: selectedResume.resume_id,
-              ...proj
-            })
-          });
+          await apiCall('/form/projects', { method: 'POST', body: JSON.stringify({ resume_id: selectedResume.resume_id, ...proj }) });
         }
       }
-
-      // Save certification entries
       for (const cert of resumeForm.certifications) {
         if (cert.cert_name && cert.cert_name.trim() !== '') {
-          await apiCall('/form/certifications', {
-            method: 'POST',
-            body: JSON.stringify({
-              resume_id: selectedResume.resume_id,
-              ...cert
-            })
-          });
+          await apiCall('/form/certifications', { method: 'POST', body: JSON.stringify({ resume_id: selectedResume.resume_id, ...cert }) });
         }
       }
-
-      setNotification({
-        show: true,
-        message: 'Resume saved successfully!',
-        type: 'success'
-      });
+      setNotification({ show: true, message: 'Resume saved successfully!', type: 'success' });
     } catch (error) {
       console.error('Error saving resume:', error);
-      setNotification({
-        show: true,
-        message: 'Failed to save resume. Please try again.',
-        type: 'error'
-      });
+      setNotification({ show: true, message: 'Failed to save resume. Please try again.', type: 'error' });
     }
   };
 
   return (
     <>
-      {/* Success/Error Notification */}
       {notification.show && (
-        <div className={`fixed top-20 right-4 z-100 transform transition-all duration-500 ease-in-out ${
-          notification.show ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
-        }`}>
-          <div className={`px-6 py-4 rounded-lg shadow-lg flex items-center max-w-sm ${
-            notification.type === 'success'
-              ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
-              : 'bg-gradient-to-r from-red-500 to-red-600 text-white'
-          }`}>
-            {notification.type === 'success' && (
-              <svg className="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-              </svg>
-            )}
-
-            <div className="flex-1">
-              <p className="font-medium text-sm">{notification.message}</p>
-            </div>
-            <button
-              onClick={() => setNotification({ show: false, message: '', type: 'success' })}
-              className="ml-3 text-white hover:text-gray-200 transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-              </svg>
-            </button>
+        <div className={`fixed top-20 right-4 z-100 transform transition-all duration-500 ease-in-out ${notification.show ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}>
+          <div className={`px-6 py-4 rounded-lg shadow-lg flex items-center max-w-sm ${notification.type === 'success' ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white' : 'bg-gradient-to-r from-red-500 to-red-600 text-white'}`}>
+            {notification.type === 'success' && (<svg className="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>)}
+            <div className="flex-1"><p className="font-medium text-sm">{notification.message}</p></div>
+            <button onClick={() => setNotification({ show: false, message: '', type: 'success' })} className="ml-3 text-white hover:text-gray-200 transition-colors"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
           </div>
         </div>
       )}
 
-      {/* Wrap Routes with PageTransition */}
       <PageTransition isTransitioning={isTransitioning}>
         <Routes>
-          {/* Public Routes */}
-          <Route
-            path="/login"
-            element={
-              currentUser ? (
-                <Navigate to="/dashboard" replace />
-              ) : (
-                <LoginPage
-                  onLogin={handleLogin}
-                  onSwitchToSignup={() => navigateWithTransition('/signup')}
-                  isLoading={isLoading}
-                />
-              )
-            }
-          />
-
-          <Route
-            path="/signup"
-            element={
-              currentUser ? (
-                <Navigate to="/dashboard" replace />
-              ) : (
-                <SignupPage
-                  onSignup={handleSignup}
-                  onSwitchToLogin={() => navigateWithTransition('/login')}
-                  isLoading={isLoading}
-                />
-              )
-            }
-          />
-
-          {/* Protected Routes */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute isAuthenticated={!!currentUser}>
-                <Dashboard
-                  currentUser={currentUser}
-                  resumes={resumes}
-                  searchQuery={searchQuery}
-                  onSearchChange={setSearchQuery}
-                  onCreateResume={() => setShowCreateModal(true)}
-                  onEditResume={handleEditResume}
-                  onDuplicateResume={duplicateResume}
-                  onDeleteResume={deleteResume}
-                  darkMode={darkMode}
-                  onToggleDarkMode={() => setDarkMode(!darkMode)}
-                  onLogout={handleLogout}
-                  onProfile={() => navigateWithTransition('/profile')}
-                />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/resume/:id/edit"
-            element={
-              <ProtectedRoute isAuthenticated={!!currentUser}>
-                <ResumeEditor
-                  selectedResume={selectedResume}
-                  resumeForm={resumeForm}
-                  onUpdateForm={setResumeForm}
-                  onSave={saveResumeData}
-                  onBack={() => navigateWithTransition('/dashboard')}
-                  currentUser={currentUser}
-                />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute isAuthenticated={!!currentUser}>
-                <ProfilePage
-                  currentUser={currentUser}
-                  onBack={() => navigateWithTransition('/dashboard')}
-                  onUpdateUser={updateCurrentUser}
-                  onShowNotification={showNotification}
-                />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Default Route */}
-          <Route
-            path="/"
-            element={<Navigate to={currentUser ? "/dashboard" : "/login"} replace />}
-          />
-
-          {/* 404 Route */}
-          <Route
-            path="*"
-            element={
-              <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-                <div className="text-center">
-                  <h1 className="text-4xl font-bold text-white mb-4">404</h1>
-                  <p className="text-gray-400 mb-4">Page not found</p>
-                  <button
-                    onClick={() => navigateWithTransition('/')}
-                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                  >
-                    Go Home
-                  </button>
-                </div>
-              </div>
-            }
-          />
+          <Route path="/login" element={currentUser ? (<Navigate to="/dashboard" replace />) : (<LoginPage onLogin={handleLogin} onSwitchToSignup={() => navigateWithTransition('/signup')} isLoading={isLoading} />)} />
+          <Route path="/signup" element={currentUser ? (<Navigate to="/dashboard" replace />) : (<SignupPage onSignup={handleSignup} onSwitchToLogin={() => navigateWithTransition('/login')} isLoading={isLoading} />)} />
+          <Route path="/dashboard" element={<ProtectedRoute isAuthenticated={!!currentUser}><Dashboard currentUser={currentUser} resumes={resumes} searchQuery={searchQuery} onSearchChange={setSearchQuery} onCreateResume={() => setShowCreateModal(true)} onEditResume={handleEditResume} onDuplicateResume={duplicateResume} onDeleteResume={deleteResume} darkMode={darkMode} onToggleDarkMode={() => setDarkMode(!darkMode)} onLogout={handleLogout} onProfile={() => navigateWithTransition('/profile')} /></ProtectedRoute>} />
+          <Route path="/resume/:id/edit" element={<ProtectedRoute isAuthenticated={!!currentUser}><ResumeEditor selectedResume={selectedResume} resumeForm={resumeForm} onUpdateForm={setResumeForm} onSave={saveResumeData} onBack={() => navigateWithTransition('/dashboard')} currentUser={currentUser} /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute isAuthenticated={!!currentUser}><ProfilePage currentUser={currentUser} onBack={() => navigateWithTransition('/dashboard')} onUpdateUser={updateCurrentUser} onShowNotification={showNotification} /></ProtectedRoute>} />
+          <Route path="/" element={<Navigate to={currentUser ? "/dashboard" : "/login"} replace />} />
+          <Route path="*" element={<div className="min-h-screen bg-gray-900 flex items-center justify-center"><div className="text-center"><h1 className="text-4xl font-bold text-white mb-4">404</h1><p className="text-gray-400 mb-4">Page not found</p><button onClick={() => navigateWithTransition('/')} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Go Home</button></div></div>} />
         </Routes>
       </PageTransition>
 
-      {/* Modal component */}
-      <CreateResumeModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSubmit={createNewResume}
-        isLoading={isLoading}
-      />
+      <CreateResumeModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} onSubmit={createNewResume} isLoading={isLoading} />
     </>
   );
 }

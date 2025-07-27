@@ -16,6 +16,10 @@ app.use('/api/form', require('./routes/formRoutes'));
 // The '/uploads' route has been removed as the feature is removed
 
 const PORT = process.env.PORT || 5000;
+
+// const response = await fetch(`https://resume-rocket-backend.onrender.com/api/auth/login`, { 
+// });
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
