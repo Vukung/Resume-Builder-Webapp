@@ -1,9 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db/db');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const db = require('../db/db'); // This now imports the PostgreSQL pool
 const jwt = require('jsonwebtoken');
 
 // JWT Secret - should match your authRoutes.js
@@ -39,53 +36,25 @@ const authorizeUser = (req, res, next) => {
   next();
 };
 
-// Configure multer for file upload
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = 'uploads/profile-pics/';
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const userId = req.params.userId;
-    const fileExtension = path.extname(file.originalname);
-    cb(null, `user_${userId}_${Date.now()}${fileExtension}`);
-  }
-});
-
-const upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'));
-    }
-  }
-});
-
 // GET: Fetch user profile (PROTECTED)
 router.get('/:userId', authenticateToken, authorizeUser, (req, res) => {
   const userId = req.params.userId;
   
-  const query = 'SELECT user_id, username, name, email, phone_num, profile_pic FROM USER WHERE user_id = ?';
+  // PG CHANGE: Removed profile_pic, using $1 placeholder and "USER" table
+  const query = 'SELECT user_id, username, name, email, phone_num FROM "USER" WHERE user_id = $1';
   db.query(query, [userId], (error, results) => {
     if (error) {
       console.error('Database error:', error);
       return res.status(500).json({ error: 'Failed to fetch user profile' });
     }
     
-    if (results.length === 0) {
+    // PG CHANGE: Checking results.rows
+    if (results.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
     
-    res.json(results[0]);
+    // PG CHANGE: Getting data from results.rows[0]
+    res.json(results.rows[0]);
   });
 });
 
@@ -94,31 +63,33 @@ router.put('/:userId', authenticateToken, authorizeUser, (req, res) => {
   const userId = req.params.userId;
   const { name, email, phone_num } = req.body;
   
-  // Validate required fields
   if (!name || !email) {
     return res.status(400).json({ error: 'Name and email are required' });
   }
   
-  // Additional validation for email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     return res.status(400).json({ error: 'Invalid email format' });
   }
   
-  const query = 'UPDATE USER SET name = ?, email = ?, phone_num = ? WHERE user_id = ?';
+  // PG CHANGE: Using $1, $2... placeholders and "USER" table
+  const query = 'UPDATE "USER" SET name = $1, email = $2, phone_num = $3 WHERE user_id = $4';
   db.query(query, [name, email, phone_num || null, userId], (error, result) => {
     if (error) {
       console.error('Database error:', error);
       return res.status(500).json({ error: 'Failed to update profile' });
     }
     
-    if (result.affectedRows === 0) {
+    // PG CHANGE: Using result.rowCount instead of affectedRows
+    if (result.rowCount === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
     
     // Return updated user data
+    // PG CHANGE: Removed profile_pic, using $1 placeholder and "USER" table
+    const selectQuery = 'SELECT user_id, username, name, email, phone_num FROM "USER" WHERE user_id = $1';
     db.query(
-      'SELECT user_id, username, name, email, phone_num, profile_pic FROM USER WHERE user_id = ?',
+      selectQuery,
       [userId],
       (err, userData) => {
         if (err) {
@@ -129,61 +100,12 @@ router.put('/:userId', authenticateToken, authorizeUser, (req, res) => {
         res.json({
           success: true,
           message: 'Profile updated successfully',
-          user: userData[0]
+          // PG CHANGE: Getting data from userData.rows[0]
+          user: userData.rows[0]
         });
       }
     );
   });
-});
-
-// POST: Upload profile picture (PROTECTED)
-router.post('/:userId/upload', authenticateToken, authorizeUser, upload.single('profilePic'), (req, res) => {
-  try {
-    const userId = req.params.userId;
-    
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
-    
-    const filePath = `/uploads/profile-pics/${req.file.filename}`;
-    
-    // Optional: Remove old profile picture file
-    db.query('SELECT profile_pic FROM USER WHERE user_id = ?', [userId], (selectErr, oldData) => {
-      if (!selectErr && oldData.length > 0 && oldData[0].profile_pic) {
-        const oldFilePath = path.join(__dirname, '..', oldData[0].profile_pic.substring(1)); // Remove leading slash
-        if (fs.existsSync(oldFilePath)) {
-          fs.unlinkSync(oldFilePath); // Delete old file
-        }
-      }
-    });
-    
-    // Update database with new file path
-    db.query(
-      'UPDATE USER SET profile_pic = ? WHERE user_id = ?',
-      [filePath, userId],
-      (error, result) => {
-        if (error) {
-          console.error('Database error:', error);
-          return res.status(500).json({ error: 'Failed to update profile picture in database' });
-        }
-        
-        if (result.affectedRows === 0) {
-          return res.status(404).json({ error: 'User not found' });
-        }
-        
-        res.json({
-          success: true,
-          message: 'Profile picture uploaded successfully',
-          filePath: filePath,
-          fileName: req.file.filename
-        });
-      }
-    );
-    
-  } catch (error) {
-    console.error('Upload error:', error);
-    res.status(500).json({ error: 'Failed to upload profile picture' });
-  }
 });
 
 module.exports = router;

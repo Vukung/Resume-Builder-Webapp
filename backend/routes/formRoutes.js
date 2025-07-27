@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db/db');
+const db = require('../db/db'); // This now imports the PostgreSQL pool
 
 // About - Handle both insert and update
 router.post('/about', (req, res) => {
@@ -10,14 +10,17 @@ router.post('/about', (req, res) => {
     return res.status(200).json({ message: 'About info skipped (empty)' });
   }
   
-  db.query('SELECT * FROM ABOUT_INFO WHERE resume_id = ? AND is_deleted = FALSE', [resume_id], (err, results) => {
+  // PG CHANGE: Using $1 placeholder
+  db.query('SELECT * FROM ABOUT_INFO WHERE resume_id = $1 AND is_deleted = FALSE', [resume_id], (err, results) => {
     if (err) {
       console.error('About query error:', err);
       return res.status(500).json({ error: err });
     }
     
-    if (results.length > 0) {
-      db.query('UPDATE ABOUT_INFO SET about_text = ? WHERE resume_id = ? AND is_deleted = FALSE', 
+    // PG CHANGE: Checking results.rows
+    if (results.rows.length > 0) {
+      // PG CHANGE: Using $1, $2 placeholders
+      db.query('UPDATE ABOUT_INFO SET about_text = $1 WHERE resume_id = $2 AND is_deleted = FALSE', 
         [about_text, resume_id], (err) => {
           if (err) {
             console.error('About update error:', err);
@@ -26,7 +29,8 @@ router.post('/about', (req, res) => {
           res.status(200).json({ message: 'About info updated' });
         });
     } else {
-      db.query('INSERT INTO ABOUT_INFO (resume_id, about_text) VALUES (?, ?)', 
+      // PG CHANGE: Using $1, $2 placeholders
+      db.query('INSERT INTO ABOUT_INFO (resume_id, about_text) VALUES ($1, $2)', 
         [resume_id, about_text], (err) => {
           if (err) {
             console.error('About insert error:', err);
@@ -38,7 +42,7 @@ router.post('/about', (req, res) => {
   });
 });
 
-// Education - Corrected to save grade information
+// Education
 router.post('/education', (req, res) => {
   const { resume_id, institution_name, degree, start_date_edu, end_date_edu, grade_type, grade_value } = req.body;
 
@@ -52,10 +56,11 @@ router.post('/education', (req, res) => {
   const final_grade_type = grade_type || 'percentage';
   const final_grade_value = (grade_value && String(grade_value).trim() !== '') ? grade_value : null;
 
+  // PG CHANGE: Using $1, $2... placeholders
   const sql = `
     INSERT INTO EDUCATION 
     (resume_id, institution_name, degree, start_date_edu, end_date_edu, grade_type, grade_value) 
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    VALUES ($1, $2, $3, $4, $5, $6, $7)
   `;
   
   const values = [
@@ -77,9 +82,8 @@ router.post('/education', (req, res) => {
   });
 });
 
-// --- CORRECTED EXPERIENCE ROUTE ---
+// Experience
 router.post('/experience', (req, res) => {
-  // Destructure all fields, including ex_desc
   const { resume_id, job_title, company_name, start_date_ex, end_date_ex, ex_desc } = req.body;
   
   if ((!job_title || job_title.trim() === '') && 
@@ -91,14 +95,13 @@ router.post('/experience', (req, res) => {
   const endDate = end_date_ex || null;
   const final_ex_desc = ex_desc || null;
 
-  // Update the SQL query to include ex_desc
+  // PG CHANGE: Using $1, $2... placeholders
   const sql = `
     INSERT INTO EXPERIENCE 
     (resume_id, job_title, company_name, start_date_ex, end_date_ex, ex_desc) 
-    VALUES (?, ?, ?, ?, ?, ?)
+    VALUES ($1, $2, $3, $4, $5, $6)
   `;
   
-  // Add ex_desc to the values array
   const values = [
     resume_id, 
     job_title || null, 
@@ -117,7 +120,7 @@ router.post('/experience', (req, res) => {
   });
 });
 
-// Projects - Only save if project name is provided
+// Projects
 router.post('/projects', (req, res) => {
   const { resume_id, project_name, tech_stack, proj_desc, proj_link } = req.body;
   
@@ -125,7 +128,9 @@ router.post('/projects', (req, res) => {
     return res.status(200).json({ message: 'Project skipped (empty)' });
   }
   
-  db.query('INSERT INTO PROJECT (resume_id, project_name, tech_stack, proj_desc, proj_link) VALUES (?, ?, ?, ?, ?)',
+  // PG CHANGE: Using $1, $2... placeholders
+  const sql = 'INSERT INTO PROJECT (resume_id, project_name, tech_stack, proj_desc, proj_link) VALUES ($1, $2, $3, $4, $5)';
+  db.query(sql,
     [resume_id, project_name, tech_stack || null, proj_desc || null, proj_link || null], (err) => {
       if (err) {
         console.error('Projects insert error:', err);
@@ -135,7 +140,7 @@ router.post('/projects', (req, res) => {
     });
 });
 
-// Certifications - Only save if cert name is provided
+// Certifications
 router.post('/certifications', (req, res) => {
   const { resume_id, cert_name, issuer } = req.body;
   
@@ -143,7 +148,9 @@ router.post('/certifications', (req, res) => {
     return res.status(200).json({ message: 'Certification skipped (empty)' });
   }
   
-  db.query('INSERT INTO CERTIFICATIONS (resume_id, cert_name, issuer) VALUES (?, ?, ?)',
+  // PG CHANGE: Using $1, $2, $3 placeholders
+  const sql = 'INSERT INTO CERTIFICATIONS (resume_id, cert_name, issuer) VALUES ($1, $2, $3)';
+  db.query(sql,
     [resume_id, cert_name, issuer || null], (err) => {
       if (err) {
         console.error('Certifications insert error:', err);
@@ -156,7 +163,8 @@ router.post('/certifications', (req, res) => {
 // --- Clear existing data routes ---
 router.post('/clear-education', (req, res) => {
   const { resume_id } = req.body;
-  db.query('UPDATE EDUCATION SET is_deleted = TRUE WHERE resume_id = ?', [resume_id], (err) => {
+  // PG CHANGE: Using $1 placeholder
+  db.query('UPDATE EDUCATION SET is_deleted = TRUE WHERE resume_id = $1', [resume_id], (err) => {
     if (err) {
       console.error('Clear education error:', err);
       return res.status(500).json({ error: err });
@@ -167,7 +175,8 @@ router.post('/clear-education', (req, res) => {
 
 router.post('/clear-experience', (req, res) => {
   const { resume_id } = req.body;
-  db.query('UPDATE EXPERIENCE SET is_deleted = TRUE WHERE resume_id = ?', [resume_id], (err) => {
+  // PG CHANGE: Using $1 placeholder
+  db.query('UPDATE EXPERIENCE SET is_deleted = TRUE WHERE resume_id = $1', [resume_id], (err) => {
     if (err) {
       console.error('Clear experience error:', err);
       return res.status(500).json({ error: err });
@@ -178,7 +187,8 @@ router.post('/clear-experience', (req, res) => {
 
 router.post('/clear-projects', (req, res) => {
   const { resume_id } = req.body;
-  db.query('UPDATE PROJECT SET is_deleted = TRUE WHERE resume_id = ?', [resume_id], (err) => {
+  // PG CHANGE: Using $1 placeholder
+  db.query('UPDATE PROJECT SET is_deleted = TRUE WHERE resume_id = $1', [resume_id], (err) => {
     if (err) {
       console.error('Clear projects error:', err);
       return res.status(500).json({ error: err });
@@ -189,7 +199,8 @@ router.post('/clear-projects', (req, res) => {
 
 router.post('/clear-certifications', (req, res) => {
   const { resume_id } = req.body;
-  db.query('UPDATE CERTIFICATIONS SET is_deleted = TRUE WHERE resume_id = ?', [resume_id], (err) => {
+  // PG CHANGE: Using $1 placeholder
+  db.query('UPDATE CERTIFICATIONS SET is_deleted = TRUE WHERE resume_id = $1', [resume_id], (err) => {
     if (err) {
       console.error('Clear certifications error:', err);
       return res.status(500).json({ error: err });

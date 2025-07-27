@@ -1,28 +1,34 @@
-const mysql = require('mysql2');
+const { Pool } = require('pg');
 
-// This configuration to use Render's environment variables when available,
-// otherwise
-// it will fall back to local development database settings
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || 'root',
-  database: process.env.DB_DATABASE || 'resume_builder_database',
-  port: process.env.DB_PORT || 3306, // Default MySQL port
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
+// This configuration will use a DATABASE_URL environment variable on Render
+// otherwise,
+// it will fall back to local settings.
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  // Use a direct connection object for local development for now
+  ...( !process.env.DATABASE_URL && {
+    host: 'localhost',
+    user: 'postgres', // Default user 
+    password: 'root', // local PostgreSQL password
+    database: 'resume_builder_database',
+    port: 5432, // Default port for PostgreSQL
+  }),
+  // This is required for Render's managed database and other cloud providers
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
 });
 
 // Test the connection on startup
-pool.getConnection((err, connection) => {
+pool.connect((err, client, release) => {
     if (err) {
-        console.error('Database connection failed:', err);
-        return;
+        return console.error('Error acquiring client', err.stack);
     }
     console.log('Database connected successfully!');
-    connection.release(); // Release the connection
+    client.query('SELECT NOW()', (err, result) => {
+        release(); // Release the client back to the pool
+        if (err) {
+            return console.error('Error executing query', err.stack);
+        }
+    });
 });
 
-// Export the pool for use in other files
 module.exports = pool;

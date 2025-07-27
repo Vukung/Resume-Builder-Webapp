@@ -224,13 +224,13 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser, onShowNotification }) 
                   <h2 className="text-2xl font-bold text-white">{currentUser?.name}</h2>
                   <p className="text-gray-400">{currentUser?.email}</p>
                 </div>
-                <button 
+                {/* <button 
                   onClick={() => setShowUploadModal(true)}
                   className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
                 >
                   <Upload className="w-4 h-4" />
                   <span>Upload Photo</span>
-                </button>
+                </button> */}
               </div>
 
               {/* Make form fields editable */}
