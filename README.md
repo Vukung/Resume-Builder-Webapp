@@ -68,29 +68,6 @@ It features a sleek, responsive UI, robust backend, and end-to-end deployment on
 
 ---
 
-## 🎨 Screenshots
-
-| 🌞 Light Mode | 🌚 Dark Mode |
-|--------------|-------------|
-| ![](docs/light.png) | ![](docs/dark.png) |
-
----
-
-## 🗂️ Folder Structure
-Resume-Builder-Webapp/
-├── backend/ # Express API (db pool, routes, middleware)
-│ ├── db/
-│ └── routes/
-├── frontend/ # React SPA (CRA + Tailwind)
-│ ├── src/components/
-│ ├── src/hooks/
-│ └── src/styles/
-└── docs/ # Assets for README, schemas, screenshots
-
-
-
----
-
 ## 🛠️ Tech Stack
 
 | Layer          | Tech Stack                                      |
