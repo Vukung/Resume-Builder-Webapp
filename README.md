@@ -11,18 +11,18 @@
 
 ### 📝 Resume Editor + Live Preview  
 Real-time section editing with instant preview  
-![Editor + Preview GIF](screenshots/Resume_Rocket_App.gif)
+![Editor + Preview GIF](Screenshots/Resume_Rocket_App.gif)
 
 ---
 
 ### 🔐 Login Page  
-![Login Page](Screenshots/Home.png)
+![Login Page](Screenshots/HomePage.png)
 
 ---
 
 ### 🧭 Dashboard  
 List, search, and manage resumes  
-![Dashboard](Screenshots/dashboard.png)
+![Dashboard](Screenshots/Dashboard.png)
 
 ---
 
