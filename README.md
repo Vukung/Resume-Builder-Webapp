@@ -28,7 +28,6 @@ List, search, and manage resumes
 
 ### 📝 Resume Editor  
 Real-time editing with bulk controls  
-![Editor](Screenshots/ResumeEditor.png)
 ![Editor](Screenshots/ResumeEditorPreview.png)
 
 ---
