@@ -10,7 +10,7 @@
 **Resume Rocket** is a full-stack MERN-style web app that empowers users to **create, edit, manage, and preview** resumes in real time.  
 It features a sleek, responsive UI, robust backend, and end-to-end deployment on **Render**, with **PostgreSQL via Supabase**.
 
-> 🔐 Fully authenticated, beautifully styled, and database-driven. Let’s rocket your resume into orbit.
+> 🔐 Beautifully styled and database-driven. Let’s rocket your resume into orbit.
 
 ---
 
@@ -32,8 +32,6 @@ It features a sleek, responsive UI, robust backend, and end-to-end deployment on
 - Bulk clear feature
 
 ### 🌓 UI/UX
-- Fully **responsive** layout (mobile to 4K)  
-- **Dark mode** with `localStorage` persistence  
 - Elegant glassmorphism + gradient icons  
 - Smooth toast notifications for feedback
 
