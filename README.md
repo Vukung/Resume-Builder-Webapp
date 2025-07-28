@@ -6,6 +6,35 @@
 
 ---
 
+## 🖼️ Screenshots
+
+
+### 📝 Resume Editor + Live Preview  
+Real-time section editing with instant preview  
+![Editor + Preview GIF](screenshots/Resume_Rocket_App.gif)
+
+---
+
+### 🔐 Login Page  
+![Login Page](Screenshots/Home.png)
+
+---
+
+### 🧭 Dashboard  
+List, search, and manage resumes  
+![Dashboard](Screenshots/dashboard.png)
+
+---
+
+### 📝 Resume Editor  
+Real-time editing with bulk controls  
+![Editor](Screenshots/ResumeEditor)
+![Editor](Screenshots/ResumeEditorPreview)
+
+---
+
+---
+
 ## 🧠 Overview  
 **Resume Rocket** is a full-stack MERN-style web app that empowers users to **create, edit, manage, and preview** resumes in real time.  
 It features a sleek, responsive UI, robust backend, and end-to-end deployment on **Render**, with **PostgreSQL via Supabase**.
