@@ -4,7 +4,7 @@ const db = mysql.createConnection({
   host: "localhost",
   user: "root", 
   password: "root",
-  database: "resume_builder_database"  // Changed from resume_builder_db
+  database: "resume_builder_database_test"  // Changed from resume_builder_db
 });
 
 db.connect((err) => {

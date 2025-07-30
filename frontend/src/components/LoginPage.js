@@ -44,12 +44,12 @@ const LoginPage = ({ onLogin, onSwitchToSignup, isLoading }) => {
 
 
 
-  const stats = [
-    { value: "500+", label: "Resumes Created" },
-    { value: "100%", label: "Success Rate" },
-    { value: "50+", label: "Templates" },
-    { value: "24/7", label: "Support" }
-  ];
+  // const stats = [
+  //   { value: "500+", label: "Resumes Created" },
+  //   { value: "100%", label: "Success Rate" },
+  //   { value: "50+", label: "Templates" },
+  //   { value: "24/7", label: "Support" }
+  // ];
 
   return (
     <div className="min-h-screen bg-gray-900">
@@ -113,7 +113,7 @@ const LoginPage = ({ onLogin, onSwitchToSignup, isLoading }) => {
               </span>
             </h1>
             <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
-            ⚡ Built by MITAOE students. Trusted by 8,245+ alumni. Powered by AI. Ready for your dream job?
+            ⚡ Built by MITAOE students. Ready for your dream job?
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
@@ -134,7 +134,7 @@ const LoginPage = ({ onLogin, onSwitchToSignup, isLoading }) => {
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 bg-gray-800/50">
+      {/* <section className="py-16 bg-gray-800/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
@@ -147,7 +147,8 @@ const LoginPage = ({ onLogin, onSwitchToSignup, isLoading }) => {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
+      {/* removed to avoid false promise */}
 
       {/* Features Section */}
       <section id="features" className="py-20 px-4 sm:px-6 lg:px-8">
