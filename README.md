@@ -13,10 +13,7 @@
 Real-time section editing with instant preview  
 ![Editor + Preview GIF](Screenshots/Resume_Rocket_App.gif)
 
----
 
-### 🔐 Login Page  
-![Login Page](Screenshots/HomePage.png)
 
 ---
 
