@@ -1,9 +1,21 @@
+// Load environment variables
+require('dotenv').config();
+
 const express = require('express');
 const app = express();
 const cors = require('cors');
 
 app.use(cors());
 app.use(express.json());
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    message: 'Server is running',
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
 
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Navigate, Route, BrowserRouter as Router, Routes, useNavigate, useLocation } from 'react-router-dom';
+import { Navigate, Route, BrowserRouter as Router, Routes, useLocation, useNavigate } from 'react-router-dom';
 import './App.css';
 import CreateResumeModal from './components/CreateResumeModal';
 import Dashboard from './components/Dashboard';
@@ -11,7 +11,7 @@ import SignupPage from './components/SignupPage';
 // Import the transition components
 import PageTransition from './components/PageTransition';
 import { usePageTransition } from './hooks/usePageTransition';
-import './styles/PageTransition.css'; 
+import './styles/PageTransition.css';
 
 // Protected Route Component
 function ProtectedRoute({ children, isAuthenticated }) {
@@ -57,8 +57,10 @@ function AppContent() {
     certifications: [{ cert_name: '', issuer: '' }]
   });
 
-  // --- THIS IS THE ONLY CHANGE ---
-  const API_BASE = 'https://resume-rocket-backend.onrender.com/api';
+  // Environment-aware API configuration
+  const API_BASE = process.env.NODE_ENV === 'production' 
+    ? 'https://resume-rocket-backend.onrender.com/api'
+    : 'http://localhost:5000/api';
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
