@@ -8,12 +8,9 @@
     "start": "node app.js",
     "build": "echo 'No build step required for backend'"
   },
-
   "engines": {
     "node": "20.16.0"
   },
-
-
   "keywords": [],
   "author": "",
   "license": "ISC",

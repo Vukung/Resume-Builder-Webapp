@@ -11,6 +11,27 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-resume-builder-secret-key';
 router.post('/signup', async (req, res) => {
   const { username, name, email, password, phone_num } = req.body;
   
+  // Basic validation
+  if (!username || !name || !email || !password) {
+    return res.status(400).json({ 
+      message: 'Username, name, email, and password are required' 
+    });
+  }
+  
+  if (password.length < 6) {
+    return res.status(400).json({ 
+      message: 'Password must be at least 6 characters long' 
+    });
+  }
+  
+  // Basic email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ 
+      message: 'Please enter a valid email address' 
+    });
+  }
+  
   try {
     // Check if user already exists
     // PG CHANGE: Using $1, $2 placeholders and "USER" table
@@ -19,9 +40,18 @@ router.post('/signup', async (req, res) => {
       
       // PG CHANGE: The result object has a 'rows' property
       if (existing.rows.length > 0) {
-        return res.status(400).json({ 
-          message: 'User already exists with this email or username' 
-        });
+        const existingUser = existing.rows[0];
+        let message = 'User already exists';
+        
+        if (existingUser.email === email && existingUser.username === username) {
+          message = 'Both email and username are already taken';
+        } else if (existingUser.email === email) {
+          message = 'Email is already registered';
+        } else if (existingUser.username === username) {
+          message = 'Username is already taken';
+        }
+        
+        return res.status(400).json({ message });
       }
       
       // Hash password
