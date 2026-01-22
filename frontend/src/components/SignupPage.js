@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
 import { User } from 'lucide-react';
+import { useState } from 'react';
 
 const SignupPage = ({ onSignup, onSwitchToLogin, isLoading }) => {
   const [signupForm, setSignupForm] = useState({
@@ -8,7 +8,16 @@ const SignupPage = ({ onSignup, onSwitchToLogin, isLoading }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSignup(signupForm);
+    // Clean up the form data before sending
+    const cleanedForm = {
+      username: signupForm.username.trim(),
+      name: signupForm.name.trim(),
+      email: signupForm.email.trim(),
+      password: signupForm.password,
+      phone_num: signupForm.phone_num.trim()
+      // Remove profile_pic field as backend doesn't expect it
+    };
+    onSignup(cleanedForm);
   };
 
   return (

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Navigate, Route, BrowserRouter as Router, Routes, useNavigate, useLocation } from 'react-router-dom';
+import { Navigate, Route, BrowserRouter as Router, Routes, useLocation, useNavigate } from 'react-router-dom';
 import './App.css';
 import CreateResumeModal from './components/CreateResumeModal';
 import Dashboard from './components/Dashboard';
@@ -11,7 +11,7 @@ import SignupPage from './components/SignupPage';
 // Import the transition components
 import PageTransition from './components/PageTransition';
 import { usePageTransition } from './hooks/usePageTransition';
-import './styles/PageTransition.css'; 
+import './styles/PageTransition.css';
 
 // Protected Route Component
 function ProtectedRoute({ children, isAuthenticated }) {
@@ -164,6 +164,8 @@ function AppContent() {
       const token = localStorage.getItem('token');
       
       console.log('Making API call to:', `${API_BASE}${endpoint}`);
+      console.log('Request body:', options.body);
+      
       const response = await fetch(`${API_BASE}${endpoint}`, {
         headers: { 
           'Content-Type': 'application/json',
@@ -173,18 +175,30 @@ function AppContent() {
         ...options
       });
 
+      console.log('Response status:', response.status);
+
       if (response.status === 401 || response.status === 403) {
         console.log('Authentication failed, logging out user');
         handleLogout();
         return { error: 'Authentication failed' };
       }
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      // Try to parse JSON response
+      let data;
+      try {
+        data = await response.json();
+        console.log('API response:', data);
+      } catch (parseError) {
+        console.error('Failed to parse JSON response:', parseError);
+        data = { error: 'Invalid response format' };
       }
 
-      const data = await response.json();
-      console.log('API response:', data);
+      if (!response.ok) {
+        console.error('HTTP error:', response.status, data);
+        // Return the parsed error data instead of throwing
+        return data || { error: `HTTP error! status: ${response.status}` };
+      }
+
       return data;
     } catch (error) {
       console.error('API Error:', error);
@@ -281,6 +295,8 @@ function AppContent() {
         body: JSON.stringify(signupForm)
       });
 
+      console.log('Signup result:', result);
+
       if (result.userId) {
         setNotification({
           show: true,
@@ -300,6 +316,7 @@ function AppContent() {
         });
       }
     } catch (error) {
+      console.error('Signup error:', error);
       setNotification({
         show: true,
         message: 'Connection error. Please try again.',

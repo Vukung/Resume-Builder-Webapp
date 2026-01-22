@@ -11,15 +11,60 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-resume-builder-secret-key';
 router.post('/signup', async (req, res) => {
   const { username, name, email, password, phone_num } = req.body;
   
+  // Validate required fields
+  if (!username || !name || !email || !password) {
+    return res.status(400).json({ 
+      message: 'Missing required fields: username, name, email, and password are required' 
+    });
+  }
+
+  // Trim whitespace from inputs
+  const cleanUsername = username.trim();
+  const cleanName = name.trim();
+  const cleanEmail = email.trim();
+  const cleanPhoneNum = phone_num ? phone_num.trim() : null;
+
+  // Basic email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(cleanEmail)) {
+    return res.status(400).json({ 
+      message: 'Invalid email format' 
+    });
+  }
+
+  // Username validation
+  if (cleanUsername.length < 3) {
+    return res.status(400).json({ 
+      message: 'Username must be at least 3 characters long' 
+    });
+  }
+
+  // Password validation
+  if (password.length < 6) {
+    return res.status(400).json({ 
+      message: 'Password must be at least 6 characters long' 
+    });
+  }
+  
   try {
     // Check if user already exists
-    db.query('SELECT * FROM USER WHERE email = ? OR username = ?', [email, username], async (err, existing) => {
-      if (err) return res.status(500).json({ message: 'Database error', error: err });
+    db.query('SELECT * FROM USER WHERE email = ? OR username = ?', [cleanEmail, cleanUsername], async (err, existing) => {
+      if (err) {
+        console.error('Database error during user check:', err);
+        return res.status(500).json({ message: 'Database error', error: err.message });
+      }
       
       if (existing.length > 0) {
-        return res.status(400).json({ 
-          message: 'User already exists with this email or username' 
-        });
+        const existingUser = existing[0];
+        if (existingUser.email === cleanEmail) {
+          return res.status(400).json({ 
+            message: 'An account with this email already exists' 
+          });
+        } else if (existingUser.username === cleanUsername) {
+          return res.status(400).json({ 
+            message: 'This username is already taken' 
+          });
+        }
       }
       
       // Hash password
@@ -28,9 +73,24 @@ router.post('/signup', async (req, res) => {
       
       // Insert new user
       const sql = `INSERT INTO USER (username, name, email, password, phone_num, profile_pic) VALUES (?, ?, ?, ?, ?, ?)`;
-      db.query(sql, [username, name, email, hashedPassword, phone_num, null], (err, result) => {
-        if (err) return res.status(500).json({ message: 'Signup failed', error: err });
+      db.query(sql, [cleanUsername, cleanName, cleanEmail, hashedPassword, cleanPhoneNum, null], (err, result) => {
+        if (err) {
+          console.error('Database error during user creation:', err);
+          
+          // Handle specific MySQL errors
+          if (err.code === 'ER_DUP_ENTRY') {
+            return res.status(400).json({ 
+              message: 'Username or email already exists' 
+            });
+          }
+          
+          return res.status(500).json({ 
+            message: 'Failed to create user account', 
+            error: err.message 
+          });
+        }
         
+        console.log('User created successfully with ID:', result.insertId);
         res.status(201).json({ 
           message: 'User created successfully', 
           userId: result.insertId 
