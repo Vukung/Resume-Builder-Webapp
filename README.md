@@ -1,7 +1,7 @@
 # 🚀 Resume Rocket  
 ### _Build, Edit, and Launch Professional Resumes — Right from Your Browser_
 
-[🌐 **Live Demo**](https://resume-rocket-frontend.onrender.com)  
+<!---[🌐 **Live Demo**](https://resume-rocket-frontend.onrender.com)  --->
 [📦 **Source Code**](https://github.com/Vukung/Resume-Builder-Webapp/tree/Deployed)
 
 ---
