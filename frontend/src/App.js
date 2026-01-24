@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Navigate, Route, BrowserRouter as Router, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, Route, BrowserRouter as Router, Routes, useNavigate } from 'react-router-dom';
 import './App.css';
 import CreateResumeModal from './components/CreateResumeModal';
 import Dashboard from './components/Dashboard';
@@ -30,7 +30,6 @@ function AppContent() {
 
   // Add transition hooks
   const navigate = useNavigate();
-  const location = useLocation();
   const { isTransitioning, transitionToPage } = usePageTransition();
 
   // Notification state
@@ -64,22 +63,6 @@ function AppContent() {
     document.documentElement.classList.toggle('dark', darkMode);
   }, [darkMode]);
 
-  // Theme state
-  const [isDarkMode, setIsDarkMode] = useState(true);
-
-  // Load theme preference
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-      setIsDarkMode(savedTheme === 'dark');
-    }
-  }, []);
-
-  // Theme toggle function
-  const toggleTheme = () => {
-    setIsDarkMode(prev => !prev);
-    localStorage.setItem('theme', !isDarkMode ? 'dark' : 'light');
-  };
 
   // CHECK FOR EXISTING TOKEN ON APP STARTUP
   useEffect(() => {
@@ -97,6 +80,7 @@ function AppContent() {
         localStorage.removeItem('user');
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Auto-hide notification after 5 seconds
@@ -594,8 +578,8 @@ function AppContent() {
         <div className={`fixed top-20 right-4 z-100 transform transition-all duration-500 ease-in-out ${notification.show ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
           }`}>
           <div className={`px-6 py-4 rounded-lg shadow-lg flex items-center max-w-sm ${notification.type === 'success'
-              ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
-              : 'bg-gradient-to-r from-red-500 to-red-600 text-white'
+            ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
+            : 'bg-gradient-to-r from-red-500 to-red-600 text-white'
             }`}>
             {notification.type === 'success' && (
               <svg className="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

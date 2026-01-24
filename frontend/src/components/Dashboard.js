@@ -1,5 +1,4 @@
-import React from 'react';
-import { FileText, Plus, Search, Eye, Copy, Trash2, ChevronRight, Moon, Sun, LogOut, Settings } from 'lucide-react';
+import { ChevronRight, Copy, Eye, FileText, LogOut, Plus, Search, Settings, Trash2 } from 'lucide-react';
 
 const Header = ({ currentUser, isDarkMode, onToggleTheme, onLogout, onProfile }) => (
   <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
@@ -10,7 +9,7 @@ const Header = ({ currentUser, isDarkMode, onToggleTheme, onLogout, onProfile })
         </div>
         <h1 className="text-2xl font-bold text-white">Resume Builder</h1>
       </div>
-      
+
       <div className="flex items-center space-x-4">
         {/* <button
           onClick={onToggleTheme}
@@ -68,10 +67,10 @@ const ResumeCard = ({ resume, onEdit, onDuplicate, onDelete }) => (
         </button>
       </div>
     </div>
-    
+
     <h3 className="text-lg font-semibold text-white mb-2 truncate">{resume.title}</h3>
     <p className="text-gray-400 text-sm mb-4">Last updated: {new Date().toLocaleDateString()}</p>
-    
+
     <button
       onClick={() => onEdit(resume)}
       className="w-full bg-gray-700 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors flex items-center justify-center space-x-2"
@@ -82,19 +81,19 @@ const ResumeCard = ({ resume, onEdit, onDuplicate, onDelete }) => (
   </div>
 );
 
-const Dashboard = ({ 
-  currentUser, 
-  resumes, 
-  searchQuery, 
-  onSearchChange, 
-  onCreateResume, 
-  onEditResume, 
-  onDuplicateResume, 
-  onDeleteResume, 
-  isDarkMode, 
-  onToggleTheme, 
-  onLogout, 
-  onProfile 
+const Dashboard = ({
+  currentUser,
+  resumes,
+  searchQuery,
+  onSearchChange,
+  onCreateResume,
+  onEditResume,
+  onDuplicateResume,
+  onDeleteResume,
+  isDarkMode,
+  onToggleTheme,
+  onLogout,
+  onProfile
 }) => {
   const filteredResumes = resumes.filter(resume =>
     resume.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -102,7 +101,7 @@ const Dashboard = ({
 
   return (
     <div className="min-h-screen bg-gray-900">
-      <Header 
+      <Header
         currentUser={currentUser}
         isDarkMode={isDarkMode}
         onToggleTheme={onToggleTheme}
