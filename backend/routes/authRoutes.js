@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 
 // JWT Secret - In production, use environment variable
-const JWT_SECRET = process.env.JWT_SECRET || 'your-resume-builder-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET || 'resume-builder-secret-key';
 
 // Signup
 router.post('/signup', async (req, res) => {

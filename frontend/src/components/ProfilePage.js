@@ -6,7 +6,7 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser, onShowNotification }) 
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [uploading, setUploading] = useState(false);
-  
+
   // State for profile editing
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -28,7 +28,7 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser, onShowNotification }) 
         }
         return;
       }
-      
+
       // Validate file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
         if (typeof onShowNotification === 'function') {
@@ -50,13 +50,14 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser, onShowNotification }) 
   const refreshUserData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/profile/${currentUser.user_id}`, {
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${API_URL}/profile/${currentUser.user_id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       const userData = await response.json();
-      
+
       if (userData && typeof onUpdateUser === 'function') {
         onUpdateUser(userData);
       } else {
@@ -71,39 +72,40 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser, onShowNotification }) 
   // UPDATED: Add JWT token to uploadProfilePicture function
   const uploadProfilePicture = async () => {
     if (!selectedFile) return;
-    
+
     setUploading(true);
     const formData = new FormData();
     formData.append('profilePic', selectedFile);
-    
+
     // Get token for authentication
     const token = localStorage.getItem('token');
 
     try {
-      const response = await fetch(`http://localhost:5000/api/profile/${currentUser.user_id}/upload`, {
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${API_URL}/profile/${currentUser.user_id}/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
         },
         body: formData
       });
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
         setShowUploadModal(false);
         setSelectedFile(null);
         setPreviewUrl(null);
-        
+
         await refreshUserData();
-        
+
         // Use notification system if available, fallback to alert
         if (typeof onShowNotification === 'function') {
           onShowNotification('Image has been uploaded successfully! 📸', 'success');
         } else {
           alert('Profile picture updated successfully!');
         }
-        
+
       } else {
         if (typeof onShowNotification === 'function') {
           onShowNotification('Failed to upload: ' + result.error, 'error');
@@ -134,10 +136,11 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser, onShowNotification }) 
   // Save profile changes with JWT authentication
   const handleSaveProfile = async () => {
     setSaving(true);
-    
+
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/profile/${currentUser.user_id}`, {
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${API_URL}/profile/${currentUser.user_id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -145,16 +148,16 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser, onShowNotification }) 
         },
         body: JSON.stringify(formData)
       });
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
         // Update user data and exit editing mode
         if (onUpdateUser) {
           onUpdateUser(result.user);
         }
         setIsEditing(false);
-        
+
         // Use notification system if available, fallback to alert
         if (typeof onShowNotification === 'function') {
           onShowNotification('Profile updated successfully! ✨', 'success');
@@ -209,10 +212,10 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser, onShowNotification }) 
               <div className="flex items-center space-x-6 mb-6">
                 <div className="relative">
                   {currentUser?.profile_pic ? (
-                    <img 
-                      src={`http://localhost:5000${currentUser.profile_pic}`} 
-                      alt="Profile" 
-                      className="w-20 h-20 rounded-full object-cover border-2 border-gray-600" 
+                    <img
+                      src={`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000'}${currentUser.profile_pic}`}
+                      alt="Profile"
+                      className="w-20 h-20 rounded-full object-cover border-2 border-gray-600"
                     />
                   ) : (
                     <div className="bg-gradient-to-r from-blue-500 to-purple-600 w-20 h-20 rounded-full flex items-center justify-center">
@@ -224,7 +227,7 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser, onShowNotification }) 
                   <h2 className="text-2xl font-bold text-white">{currentUser?.name}</h2>
                   <p className="text-gray-400">{currentUser?.email}</p>
                 </div>
-                <button 
+                <button
                   onClick={() => setShowUploadModal(true)}
                   className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
                 >
@@ -274,7 +277,7 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser, onShowNotification }) 
               {/* Edit/save functionality */}
               <div className="mt-6 pt-6 border-t border-gray-700">
                 {!isEditing ? (
-                  <button 
+                  <button
                     onClick={() => setIsEditing(true)}
                     className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
                   >
@@ -282,14 +285,14 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser, onShowNotification }) 
                   </button>
                 ) : (
                   <div className="flex space-x-3">
-                    <button 
+                    <button
                       onClick={handleSaveProfile}
                       disabled={saving}
                       className="bg-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-green-700 disabled:opacity-50 transition-colors"
                     >
                       {saving ? 'Saving...' : 'Save Changes'}
                     </button>
-                    <button 
+                    <button
                       onClick={() => {
                         setIsEditing(false);
                         setFormData({
@@ -338,10 +341,10 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser, onShowNotification }) 
                   {previewUrl ? (
                     <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
                   ) : currentUser?.profile_pic ? (
-                    <img 
-                      src={`http://localhost:5000${currentUser.profile_pic}`} 
-                      alt="Current" 
-                      className="w-full h-full object-cover" 
+                    <img
+                      src={`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000'}${currentUser.profile_pic}`}
+                      alt="Current"
+                      className="w-full h-full object-cover"
                     />
                   ) : (
                     <User className="w-16 h-16 text-gray-400" />
@@ -368,9 +371,9 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser, onShowNotification }) 
                     <Upload className="w-5 h-5" />
                     <span>Choose Image</span>
                   </label>
-                  
+
                   <p className="text-sm text-gray-400 text-center">
-                    Supported formats: JPG, PNG, GIF<br/>
+                    Supported formats: JPG, PNG, GIF<br />
                     Max size: 5MB
                   </p>
                 </div>
@@ -383,7 +386,7 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser, onShowNotification }) 
                       {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                     </p>
                   </div>
-                  
+
                   <div className="flex space-x-3">
                     <button
                       onClick={uploadProfilePicture}
@@ -402,7 +405,7 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser, onShowNotification }) 
                         </>
                       )}
                     </button>
-                    
+
                     <button
                       onClick={() => {
                         setSelectedFile(null);
@@ -413,7 +416,7 @@ const ProfilePage = ({ currentUser, onBack, onUpdateUser, onShowNotification }) 
                       Cancel
                     </button>
                   </div>
-                  
+
                   <label
                     htmlFor="profile-upload-modal"
                     className="w-full bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 cursor-pointer transition-colors flex items-center justify-center space-x-2 text-sm"

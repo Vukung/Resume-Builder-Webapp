@@ -27,12 +27,12 @@ function AppContent() {
   const [selectedResume, setSelectedResume] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  
+
   // Add transition hooks
   const navigate = useNavigate();
   const location = useLocation();
   const { isTransitioning, transitionToPage } = usePageTransition();
-  
+
   // Notification state
   const [notification, setNotification] = useState({
     show: false,
@@ -40,7 +40,7 @@ function AppContent() {
     type: 'success'
   });
 
-  const showNotification = (message, type) => { 
+  const showNotification = (message, type) => {
     setNotification({
       show: true, // Fixed: was isVisible, should be show
       message,
@@ -57,8 +57,8 @@ function AppContent() {
     certifications: [{ cert_name: '', issuer: '' }]
   });
 
-  // Backend running on port 5000
-  const API_BASE = 'http://localhost:5000/api';
+  // Backend API URL - Uses environment variable or local fallback
+  const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
@@ -85,7 +85,7 @@ function AppContent() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
-    
+
     if (token && savedUser) {
       try {
         const user = JSON.parse(savedUser);
@@ -103,7 +103,7 @@ function AppContent() {
   useEffect(() => {
     if (notification.show) {
       // const timer = setTimeout(() => {
-        setNotification({ show: false, message: '', type: 'success' });
+      setNotification({ show: false, message: '', type: 'success' });
       // }, 5000);
       // return () => clearTimeout(timer);
     }
@@ -146,7 +146,7 @@ function AppContent() {
 
       // Navigate LAST (after transition starts)
       navigate('/login');
-      
+
       // Show notification after navigation
       setTimeout(() => {
         setNotification({
@@ -162,15 +162,15 @@ function AppContent() {
   const apiCall = async (endpoint, options = {}) => {
     try {
       const token = localStorage.getItem('token');
-      
+
       console.log('Making API call to:', `${API_BASE}${endpoint}`);
       console.log('Request body:', options.body);
-      
+
       const response = await fetch(`${API_BASE}${endpoint}`, {
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': token ? `Bearer ${token}` : '',
-          ...options.headers 
+          ...options.headers
         },
         ...options
       });
@@ -239,7 +239,7 @@ function AppContent() {
       if (result.user && result.token) {
         localStorage.setItem('token', result.token);
         localStorage.setItem('user', JSON.stringify(result.user));
-        
+
         // setCurrentUser(result.user);
         // loadResumes(result.user.user_id);
 
@@ -252,9 +252,9 @@ function AppContent() {
         // Use transition BEFORE navigation
         transitionToPage(() => {
           // Set user state DURING the black transition
-        setCurrentUser(result.user);
-        loadResumes(result.user.user_id);
-        // Navigate to dashboard
+          setCurrentUser(result.user);
+          loadResumes(result.user.user_id);
+          // Navigate to dashboard
           navigate('/dashboard');
         }, 400);
 
@@ -303,7 +303,7 @@ function AppContent() {
           message: 'Account created successfully! Please login.',
           type: 'success'
         });
-        
+
         // Use transition BEFORE navigation
         transitionToPage(() => {
           navigate('/login');
@@ -591,14 +591,12 @@ function AppContent() {
     <>
       {/* Success/Error Notification */}
       {notification.show && (
-        <div className={`fixed top-20 right-4 z-100 transform transition-all duration-500 ease-in-out ${
-          notification.show ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
-        }`}>
-          <div className={`px-6 py-4 rounded-lg shadow-lg flex items-center max-w-sm ${
-            notification.type === 'success'
+        <div className={`fixed top-20 right-4 z-100 transform transition-all duration-500 ease-in-out ${notification.show ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+          }`}>
+          <div className={`px-6 py-4 rounded-lg shadow-lg flex items-center max-w-sm ${notification.type === 'success'
               ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
               : 'bg-gradient-to-r from-red-500 to-red-600 text-white'
-          }`}>
+            }`}>
             {notification.type === 'success' && (
               <svg className="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
